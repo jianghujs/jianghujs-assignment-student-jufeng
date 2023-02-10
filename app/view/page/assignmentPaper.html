@@ -7,488 +7,497 @@
 <script type="text/html" id="app-template">
   <div class="question-paper">
     <!-- 顶部预览 -->
-    <div v-show="t_assignmentSwiper" class="header">
-        <div :style="{ visibility:  t_isSubmit ? 'hidden' : 'visible' }" class="message">温馨提示：请点击“答题卡”前去提交考试哦！</div>
-        <div class="header-bd">
-            <a
-                :href="getSheetUrl()">答题卡</a>
-            <!-- v-if="t_isWechat"  -->
-            <a href="javascript:" @click="t_isShare = true">分享</a>
+    <div class="header">
+        <div class="message">
+          <span>{{ assignmentTitle }}</span>
+          <span> - 第 {{ assignmentRetryNumber + 1 }}次做题</span>
+        </div>
+        <div class="subtitle">
+          <span class="text-subtitle-2">
+            {{ assignmentStatusDesc }}
+          </span>
+          <br>
+          <span v-if="isAssignmentSubmit">
+            {{ assignmentResult }}
+          </span>
+          
         </div>
     </div>
 
     <!-- 答题body -->
-    <div class="swiper-container swiper-no-swiping">
-        <div class="swiper-wrapper">
-            <!-- swiper 题目横向滑动 -->
-            <div v-for="question in t_swiperAssignmentList.slides" :key="question.id" :style="{ left: t_swiperAssignmentList.offset + 'px' }"
-                class="swiper-slide">
-                <div class="type">{{ question.typeName }}</div>
-                <div class="question">
-                    <div>{{ question.statement }}</div>
-                    <!-- 判断显示题目图片 -->
-                    <img v-if="question.image" :src="question.image">
-                    <div :class="{ image: question.is_img }" class="label-group">
-                        <template v-for="option in question.options">
-                            <label v-if="option.value" :key="option.code">
-                                <!-- 多选题 multiple -->
-                                <input v-if="question.type === 'multiple'" v-model="question.user_answer" :value="option.code"
-                                    :disabled="t_isSubmit || question.endStatus" type="checkbox" hidden>
-                                <!-- 其他 single 等 -->
-                                <input v-else v-model="question.user_answer" :value="option.code"
-                                    :disabled="t_isSubmit || question.endStatus" type="radio" hidden>
-
-                                <!-- label选项 -->
-                                <div :class="{
-                                      ok: checkIsRight(option, question),
-                                      no: checkIsWrong(option, question),
-                                  }">
-                                    <img v-if="question.is_img" :src="option.value">
-                                    <template v-else>{{ option.value }}</template>
-                                </div>
-                            </label>
-                        </template>
-                    </div>
-                </div>
-                <!-- 题目提交或者是正确 -->
-                <div v-show="t_isSubmit || question.endStatus" class="analysis">
-                    <div :class="{ no: question.endStatus === 'wrong' }">回答{{ question.endStatus === 'wrong' ? '错误' : '正确' }}</div>
-                    <div>
-                        <div>正确答案：<div>{{ question.answer }}</div>
-                        </div>
-                        <div>您的答案：<div>{{ question.user_answer.toString() || '未答' }}</div>
-                        </div>
-                    </div>
-                    <div>试题难度：<span v-for="star in 5" :key="star" :class="{ on: question.difficulty >= star }"
-                            class="iconfont iconxing"></span></div>
-                    <div>答案解析：</div>
-                    <div v-html="question.analysis"></div>
-                    <div v-if="question.special.length">关联知识点：</div>
-                    <a v-for="special in question.special" :key="special.id"
-                        :href="getSpecialUrl(special)">
-                        {{ special.title }}</a>
-                </div>
-            </div>
-        </div>
-        <div class="swiper-pagination"></div>
+    <div>
+      <subject-form-item v-for="(formItem, index) in assignmentAnswer" :key="index" :form-item="formItem" :index="index"
+          :is-submit="isAssignmentSubmit" :is-review="isAssignmentReview" :exam-review="assignmentReview" :user-file-list="userFileList"></subject-form-item>
     </div>
 
     <!-- 底部操作栏 -->
-    <div v-if="t_assignmentSwiper" class="footer">
-        <button :disabled="!t_assignmentSwiper.activeIndex" @click="slidePrev">
+    <div class="footer">
+        <button>
             <i class="iconfont iconshangyige"></i>
             <div>上一题</div>
         </button>
-        <button v-if="!t_isSubmit" :disabled="t_assignmentList[t_assignmentSwiper.activeIndex].endStatus"
-            @click="submitQuestion">
+        <button>
             <i class="iconfont icontijiao"></i>
             <div>确认提交</div>
         </button>
-        <button :disabled="t_assignmentSwiper.activeIndex === t_assignmentSwiper.virtual.slides.length - 1" @click="slideNext">
+        <button>
             <i class="iconfont iconxiayige"></i>
             <div>下一题</div>
         </button>
     </div>
-    <img v-show="t_isShare" class="share-mask" src="<$ uploadUrl $>/img/share-info.png" @touchmove.prevent
-        @click="t_isShare = false">
+    <img v-if="isShowShare" class="share-mask" src="<$ uploadUrl $>/img/share-info.png">
     <quick-menu></quick-menu>
-    <question-guide :visible.sync="t_isGuideVisible"></question-guide>
-  
   </div>
 </script>
 {% endblock %}
 
 {% block vueScript %}
-{% include 'component/common/quickMenu.html' %}
-{% include 'component/assignment/questionGuide.html' %}
+{% include 'component/quickMenu.html' %}
+{% include 'component/subjectFormItem.html' %}
+{% include 'component/upload.html' %}
 <script src="<$ static $>/plugin/swiper5/js/swiper.js"></script>
-<script>
+<script type="module">
   new Vue({
     el: '#app',
     template: '#app-template',
+    vueComponent: 'page',
     data: {
-      // 模板变量
-      t_assignmentList: [],
-      t_assignmentId: '',
-      t_recordId: '',
-      t_isWechat: false,
-      t_isAnalysis: false,
-      t_isShare: false,
-      t_activeIndex: 0,
-      t_swiperAssignmentList: {
-        slides: []
-      },
-      t_assignmentSwiper: null,
-      t_isGuideVisible: false,
-      t_isSubmit: false,
+      // 作业检索信息
+      assignmentId: '',
+      isShowShare: false,
 
-      // 逻辑变量
-      constantCollection: {
-        typeName: {
-          single: '单选题',
-          multiple: '多选题',
-          judge: '判断题',
-          fill: '填空题',
-          short: '简答题',
-        }
-      },
-      pageUrl: '<$ pageUrl $>'
-    },
-    watch: {
-      t_isGuideVisible(value) {
-        if (!value) {
-          localStorage.setItem('problem-guide', new Date());
-        }
-      }
-    },
-    created() {
-      this.t_assignmentId = $helper.getParmas('assignmentId') || '110';
-      this.t_activeIndex = Number($helper.getParmas('index') || 1);
+      // 页面控制参数
+      isCanSubmit: true,
+      showStandardAnswer: false,
+      answerType: '我的答案',
+      isAssignmentLoading: false,
 
-      if (parseInt($helper.getParmas('t_isAnalysis'))) {
-        this.t_isAnalysis = 1;
-        this.t_recordId = $helper.getParmas('e_id') || 4211;
-        this.getQuestionList();
-      } else {
-        this.getSituation();
-      }
-      if ($helper.getParmas('e_id') || true) {
-        this.t_recordId = $helper.getParmas('e_id') || 4211;
-        this.getQuestionList();
-      }
-      this.isSubmit();
+      // 作业基本信息
+      assignmentTitle: '题目加载中……',
+      assignmentScore: 0,
+      assignmentFullMarks: 0,
+      assignmentRetryNumber: 0,
+
+      // 作业状态信息
+      assignmentStatusDesc: '',
+      lastSaveTime: '',
+      autoSaveInterval: 30000,
+      autoSaveTimeOut: null,
+
+      // 作业内容
+      userAssignment: {},
+      assignmentAnswer: [],
+      assignmentUserAnswer: [],
+      assignmentStandardAnswer: [],
+      assignmentReview: {},
+
+      actionDataForSave: {},
+      actionDataForSubmit: {},
+
+      userFileList: {}
+    },
+    computed: {
+      isAssignmentSubmit() {
+        return this.userAssignment.assignmentSubmitStatus === 'submit';
+      },
+      isAssignmentReview() {
+        return this.userAssignment.assignmentReviewStatus === 'publish';
+      },
+      assignmentResult() {
+        const scoreText = (this.assignmentScore || this.assignmentScore == 0) ? this.assignmentScore : '待批改';
+        const fullMarkText = (this.assignmentFullMarks || this.assignmentFullMarks == 0) ? this.assignmentFullMarks : '未设置';
+        return `【得分：${scoreText} | 满分：${fullMarkText}】`;
+      },
+    },
+    watch: {},
+    async created() {
+      const urlParams = new URLSearchParams(location.search);
+      this.assignmentId = urlParams.get('assignmentId');
+
+      await this.doUiAction('getUserAssignment');
     },
     methods: {
-      checkIsRight(option, question) {
-        return option.right && question.endStatus && question.user_answer.includes(option.code);
+      async doUiAction(uiActionId, uiActionData) {
+        switch (uiActionId) {
+          case 'getUserAssignment':
+            await this.getUserAssignment();
+            await this.setAssignmentConstants();
+            break;
+          case 'saveUserAssignment':
+            await this.packUserAnswerForSave();
+            await this.clearAutoSaveTimer();
+            await this.uploadAssignmentFile();
+            await this.saveUserAssignment();
+            await this.startAutoSaveTimer();
+            break;
+          case 'submitUserAssignment':
+            await this.confirmSubmitUserAssignment();
+            await this.packUserAnswerForSubmit();
+            await this.clearAutoSaveTimer();
+            await this.submitUserAssignment();
+            await this.startAutoSaveTimer();
+            await this.getUserAssignment();
+            await this.setAssignmentConstants();
+            break;
+          case 'redoUserAssignment':
+            await this.confirmRedoUserAssignment();
+            await this.packUserAnswerForRedo();
+            await this.clearAutoSaveTimer();
+            await this.redoUserAssignment();
+            await this.getUserAssignment();
+            await this.setAssignmentConstants();
+            break;
+          case 'toggleAnswerDisplay':
+            await this.toggleAnswerDisplay();
+            break;
+          default:
+            console.error("[doUiAction] uiActionId not find", { uiActionId });
+            break;
+        }
       },
-      checkIsWrong(option, question) {
-        return !option.right && question.endStatus && question.user_answer.includes(option.code);
-      },
-      // 获取状态
-      getSituation() {
-
-      },
-      // 开始答题
-      getAnswer() {
-
-      },
-      // 再次答题
-      getAnswerAgain() {
-
-      },
-      // 继续答题
-      getAnswerContinue() {
-
-      },
-      // 获取练习题
-      getQuestionList() {
-        const questionList = [
-          {
-            "id": 287,
-            "type": 'single',
-            "assignmentId": 11,
-            "questions_id": 2,
-            "score": 0,
-            "sort": 0,
-            "option": {
-              "A": "3",
-              "B": "2"
-            },
-            "statement": "1+1",
-            "image": "<$ uploadUrl $>/img/assignmentDetailPage/04db5202103251721265124.png",
-            "answer": "B",
-            "difficulty": 2,
-            "analysis": "2",
-            "relation": "114",
-            "is_img": 0,
-            "is_del": 0,
-            "userAnswer": {
-              "endStatus": 'wrong',
-              "user_answer": "A"
-            },
-            "special": []
-          },
-          {
-            "id": 288,
-            "type": 'single',
-            "assignmentId": 11,
-            "questions_id": 76,
-            "score": 0,
-            "sort": 0,
-            "option": {
-              "A": "－3",
-              "B": "3 ",
-              "C": "±3",
-              "D": "小于3 "
-            },
-            "statement": "－3的绝对值等于",
-            "image": "",
-            "answer": "B",
-            "difficulty": 1,
-            "analysis": "3 ",
-            "relation": "",
-            "is_img": 0,
-            "is_del": 0,
-            "userAnswer": {
-              "endStatus": 'wrong',
-              "user_answer": "C"
-            },
-            "special": []
-          },
-          {
-            "id": 289,
-            "type": 'single',
-            "assignmentId": 11,
-            "questions_id": 81,
-            "score": 0,
-            "sort": 0,
-            "option": {
-              "A": "2:3",
-              "B": "3:2",
-              "C": "2:5",
-              "D": "5:2"
-            },
-            "statement": "从甲地开往乙地，客车要10小时，货车要15小时，客车与货车的速度比是",
-            "image": "",
-            "answer": "B",
-            "difficulty": 3,
-            "analysis": "行程中的两个正比和一个反比",
-            "relation": "",
-            "is_img": 0,
-            "is_del": 0,
-            "userAnswer": [],
-            "special": [
-              {
-                "id": 145,
-                "title": "儿童好听歌曲《外婆的澎湖湾》",
-                "is_light": 1,
-                "light_type": 2,
-                "image": "<$ uploadUrl $>/img/assignmentDetailPage/0184b202107271558276033.png",
-                "label": "[\"\\u6b4c\\u66f2\\u6b23\\u8d4f\"]",
-                "money": "4.00",
-                "type": 6,
-                "rid": 94,
-                "sort": 0
-              }
-            ]
-          },
-          {
-            "id": 290,
-            "type": 'single',
-            "assignmentId": 11,
-            "questions_id": 84,
-            "score": 0,
-            "sort": 0,
-            "option": {
-              "A": "质数",
-              "B": "63",
-              "C": "62",
-              "D": "31"
-            },
-            "statement": "自然数471除以一个两位数，余数是37，则这个两位数是（　　　）。",
-            "image": "",
-            "answer": "C",
-            "difficulty": 3,
-            "analysis": "471 - 37 = 434\n434 = 31 × 7 × 2\n这个两位数可能是:31，14，62，因为余数是37，所以，这个两位数只能是62。",
-            "relation": "",
-            "is_img": 0,
-            "is_del": 0,
-            "userAnswer": [],
-            "special": []
-          },
-          {
-            "id": 291,
-            "type": 'single',
-            "assignmentId": 11,
-            "questions_id": 85,
-            "score": 0,
-            "sort": 0,
-            "option": {
-              "A": "30",
-              "B": "32",
-              "C": "34",
-              "D": "36"
-            },
-            "statement": "已知a、b、c、d都是正整数，且任意两个都不相等，若abcd = 441，那么a + b + c + d = （　　　）",
-            "image": "",
-            "answer": "B",
-            "difficulty": 3,
-            "analysis": "441 = 3 × 3 × 7 × 7，因为a，b，c，d互不相等，只有取1，3，7，21，和是32。",
-            "relation": "",
-            "is_img": 0,
-            "is_del": 0,
-            "userAnswer": {
-              "endStatus": 'right',
-              "user_answer": "B"
-            },
-            "special": []
-          },
-          {
-            "id": 292,
-            "type": 'multiple',
-            "assignmentId": 11,
-            "questions_id": 3,
-            "score": 0,
-            "sort": 0,
-            "option": {
-              "A": "1",
-              "B": "2",
-              "C": "5",
-              "D": "3"
-            },
-            "statement": "1 2 3 里面包含哪些数字",
-            "image": "<$ uploadUrl $>/img/assignmentDetailPage/b62f4202103251643349822.jpg",
-            "answer": "A,B,D",
-            "difficulty": 1,
-            "analysis": "1 2 3",
-            "relation": "",
-            "is_img": 0,
-            "is_del": 0,
-            "userAnswer": {
-              "endStatus": 'wrong',
-              "user_answer": "B"
-            },
-            "special": []
-          },
-          {
-            "id": 293,
-            "type": 'judge',
-            "assignmentId": 11,
-            "questions_id": 4,
-            "score": 0,
-            "sort": 0,
-            "option": {
-              "A": "对",
-              "B": "错"
-            },
-            "statement": "1+1=2",
-            "image": "<$ uploadUrl $>/img/assignmentDetailPage/b62f4202103251643349822.jpg",
-            "answer": "A",
-            "difficulty": 1,
-            "analysis": "对",
-            "relation": "",
-            "is_img": 0,
-            "is_del": 0,
-            "userAnswer": {
-              "endStatus": 'right',
-              "user_answer": "A"
-            },
-            "special": []
-          }
-        ];
-        questionList.forEach((question) => {
-          question.options = [];
-          if (Array.isArray(question.option)) {
-            question.option.forEach(function (option, index) {
-              var code = String.fromCharCode(index + 65);
-              question.options.push({
-                code: code,
-                value: option,
-                right: question.answer.includes(code)
-              });
-            });
-          } else {
-            for (var key in question.option) {
-              if (Object.hasOwnProperty.call(question.option, key)) {
-                question.options.push({
-                  code: key,
-                  value: question.option[key],
-                  right: question.answer.includes(key)
-                });
+      // ---------- 初始化作业 >>>>>>>>>>>>> ----------
+      async getUserAssignment() {
+        this.isAssignmentLoading = true;
+        const packageData = {
+          data: {
+            appData: {
+              pageId: 'assignmentPaper',
+              actionId: 'getUserAssignment',
+              actionData: {},
+              where: {
+                assignmentId: this.assignmentId
               }
             }
           }
-          if (!Array.isArray(question.userAnswer)) {
-            Object.assign(question, question.userAnswer);
-          }
-          if (!('endStatus' in question)) {
-            question.endStatus = '';
-          }
-          if (!('user_answer' in question)) {
-            question.user_answer = '';
-          }
-          if (question.type === 'multiple') {
-            question.user_answer = question.user_answer ? question.user_answer.split(',') : [];
-          }
-          question.typeName = this.constantCollection.typeName[question.type];
+        }
+        const result = await window.jianghuAxios(packageData);
+        this.userAssignment = result.data.appData.resultData.rows[0];
+
+        this.isAssignmentLoading = false;
+      },
+      async setAssignmentConstants() {
+        const {
+          assignmentSubmitStatus,
+          assignmentSubmitAt,
+          articleTitle,
+          assignmentScore,
+          assignmentFullMarks,
+          assignmentRetryNumber,
+        } = this.userAssignment
+
+        if (assignmentSubmitStatus == 'new') {
+          this.assignmentStatusDesc = '答题中'
+          this.startAutoSaveTimer();
+        } else if (assignmentSubmitStatus == 'save') {
+          this.assignmentStatusDesc = `上次保存时间：${dayjs(assignmentSubmitAt).format('YYYY年MM月DD日HH:mm:ss')}`;
+          this.startAutoSaveTimer();
+        } else {
+          this.assignmentStatusDesc = '已提交';
+          this.clearAutoSaveTimer();
+        }
+
+        this.assignmentTitle = (articleTitle) ? articleTitle : '无题';
+        this.assignmentScore = assignmentScore;
+        this.assignmentFullMarks = assignmentFullMarks;
+        this.lastSaveTime = assignmentSubmitAt;
+        this.assignmentRetryNumber = assignmentRetryNumber;
+
+        this.assignmentUserAnswer = this.setAssignmentUserAnswerForTemplate();
+        this.assignmentStandardAnswer = this.setAssignmentStandardAnswerForTemplate();
+        this.assignmentReview = this.setAssignmentReviewForTemplate();
+        if (this.showStandardAnswer) {
+          this.assignmentAnswer = this.assignmentStandardAnswer;
+          this.assignmentStatusDesc += ' | 正在查看正确答案';
+        } else {
+          this.assignmentAnswer = this.assignmentUserAnswer;
+        }
+
+        this.userFileList = this.getUserFileList(this.assignmentUserAnswer);
+      },
+
+      setAssignmentUserAnswerForTemplate() {
+        const { assignmentUserAnswer, assignmentStandardAnswer } = this.userAssignment;
+
+        if (assignmentUserAnswer) return JSON.parse(assignmentUserAnswer);
+
+        const standardAnswer = JSON.parse(assignmentStandardAnswer);
+        standardAnswer.forEach(question => {
+          question = this._setUserDefaultFormItem(question);
         });
-        const that = this;
-        that.t_assignmentList = questionList;
-        setTimeout(() => {
-          that.t_assignmentSwiper = new Swiper('.swiper-container', {
-            initialSlide: that.t_activeIndex,
-            pagination: {
-              el: '.swiper-pagination',
-              type: 'fraction'
-            },
-            virtual: {
-              slides: questionList,
-              renderExternal(data) {
-                that.t_swiperAssignmentList = data;
-              }
-            },
-            on: {
-              init() {
-                that.t_isGuideVisible = !localStorage.getItem('problem-guide');
-              },
-              slideChange() {
-                that.t_activeIndex = this.t_activeIndex;
-                if (that.t_activeIndex === that.t_assignmentList.length - 1) {
-                  layer.msg('答完全部考题后<br>点击左上角“答题卡”前去提交练习');
-                }
-              }
+
+        return standardAnswer;
+      },
+      // 构建带有答案的标准题目
+      setAssignmentStandardAnswerForTemplate() {
+        let standardAnswer = [];
+        const { assignmentStandardAnswer } = this.userAssignment
+        if (assignmentStandardAnswer) {
+          standardAnswer = JSON.parse(assignmentStandardAnswer);
+          standardAnswer.forEach(question => {
+            question = this._setUserDefaultFormItem(question, true);
+          });
+        }
+        return standardAnswer;
+      },
+      _setUserDefaultFormItem(item, showAnswer = false) {
+        const file = {};
+        const currentComponent = item.component
+        currentComponent.uploadConfig.forEach((type) => {
+          file[type] = "";
+        });
+        let answer = "";
+        if (["singleSelect", "multipleSelect"].includes(currentComponent.type)) {
+          answer = showAnswer ? currentComponent.answer : [];
+        } else if (currentComponent.type === "fillBlank") {
+          answer = showAnswer ? currentComponent.answer : {};
+          currentComponent.statement
+            .filter((stateItem) => stateItem.type === "input")
+            .forEach((stateItem) => {
+              answer[stateItem.id] = showAnswer ? stateItem.value : "";
+            });
+        }
+        item.user = {
+          file,
+          answer,
+          remark: "",
+        };
+        if (currentComponent.type === "markdown") {
+          item.user.answer = showAnswer ? currentComponent.answer : ``;
+        }
+        if (currentComponent.type === "questionGroup") {
+          currentComponent.itemList.forEach((childItem) => {
+            childItem = this._setUserDefaultFormItem(childItem, showAnswer ? true : false);
+          });
+        }
+        return item;
+      },
+      setAssignmentReviewForTemplate() {
+        let review = {
+
+        };
+        if (this.userAssignment.assignmentReview) {
+          const assignmentReview = JSON.parse(this.userAssignment.assignmentReview);
+          review = { ...review, ...assignmentReview };
+        } else {
+          this.assignmentStandardAnswer.forEach(question => {
+            review[question.id] = {
+              "score": "",
+              "comment": "",
+            };
+            if (question.component.type === 'questionGroup') {
+              question.component.itemList.forEach(groupQuestion => {
+                review[groupQuestion.id] = {
+                  "score": "",
+                  "comment": "",
+                };
+              })
             }
           });
-        }, 1000)
-      },
-      // 提交本题
-      submitQuestion() {
-        const question = this.t_assignmentList[this.t_activeIndex];
-        const data = {
-          e_id: this.t_recordId,
-          questions_id: question.questions_id,
-          answer: question.answer,
-          score: question.score,
-          type: 1
-        };
-        if (!question.user_answer.length) {
-          return layer.msg('请作答后提交本题');
         }
-        if (question.type === 2) {
-          question.user_answer.sort();
-          data.user_answer = question.user_answer.toString();
+        return review;
+      },
+      // ---------- <<<<<<<<<<<<< 初始化作业 ----------
+
+      async startAutoSaveTimer() {
+        console.log('timer started');
+        this.autoSaveTimeOut = setTimeout(this.autoSaveUserAssignment, this.autoSaveInterval);
+      },
+      async clearAutoSaveTimer() {
+        clearTimeout(this.autoSaveTimeOut);
+      },
+      async autoSaveUserAssignment() {
+        console.log('[autoSaveUserAssignment]');
+        await this.doUiAction('saveUserAssignment');
+      },
+      // ---------- 保存作业 uiAction >>>>>>>>>>>>> ----------
+      async packUserAnswerForSave() {
+        this.actionDataForSave = {
+          assignmentSubmitStatus: 'save',
+          assignmentSubmitAt: this.lastSaveTime,
+          assignmentUserAnswer: JSON.stringify(this.assignmentAnswer),
+        }
+      },
+      async saveUserAssignment() {
+        if (!this.isCanSubmit) return;
+        window.vtoast.loading('保存中...');
+        this.isCanSubmit = false;
+        this.lastSaveTime = dayjs().format();
+        const packageData = {
+          data: {
+            appData: {
+              pageId: 'assignmentPaper',
+              actionId: 'saveUserAssignment',
+              actionData: this.actionDataForSave,
+              where: { assignmentId: this.assignmentId },
+            }
+          }
+        }
+        const result = await window.jianghuAxios(packageData);
+        this.isCanSubmit = true;
+        this.assignmentStatusDesc = `上次保存时间：${dayjs(this.lastSaveTime).format('YYYY年MM月DD日HH:mm:ss')}`;
+        this.showStandardAnswer = false;
+        window.vtoast.success('保存成功');
+      },
+      // ---------- <<<<<<<<<<<<< 保存作业 uiAction ----------
+
+      // ---------- 提交作业 uiAction >>>>>>>>>>>>> ----------
+      async confirmSubmitUserAssignment() {
+        if (await window.confirmDialog({ title: "提交", content: "提交以后作业将无法修改。确定提交作业吗？" }) === false) {
+          throw new Error("[confirmSubmitUserAssignment] 否");
+        }
+      },
+      async packUserAnswerForSubmit() {
+        this.actionDataForSubmit = {
+          assignmentSubmitStatus: 'submit',
+          assignmentSubmitAt: dayjs().format(),
+          assignmentUserAnswer: JSON.stringify(this.assignmentAnswer),
+        }
+      },
+      async submitUserAssignment() {
+        if (!this.isCanSubmit) return;
+        this.isCanSubmit = false;
+        window.vtoast.loading('提交中...');
+        const packageData = {
+          data: {
+            appData: {
+              pageId: 'assignmentPaper',
+              actionId: 'submitUserAssignment',
+              actionData: this.actionDataForSubmit,
+              where: { assignmentId: this.assignmentId },
+            }
+          }
+        }
+        const result = await window.jianghuAxios(packageData);
+        this.isCanSubmit = true;
+        window.vtoast.success('提交成功');
+      },
+      // ---------- <<<<<<<<<<<<< 提交作业 uiAction ----------
+
+      // ---------- 重做作业 uiAction >>>>>>>>>>>>> ----------
+      async confirmRedoUserAssignment() {
+        if (await window.confirmDialog({ title: "重做", content: "之前的答案和批改将被清空。确定重做作业吗？" }) === false) {
+          throw new Error("[confirmRedoUserAssignment] 否");
+        }
+      },
+      async packUserAnswerForRedo() {
+        // nothing to do
+      },
+      async redoUserAssignment() {
+        window.vtoast.loading('开始重做中...');
+        const packageData = {
+          data: {
+            appData: {
+              pageId: 'assignmentPaper',
+              actionId: 'redoUserAssignment',
+              actionData: {},
+              where: { assignmentId: this.assignmentId },
+            }
+          }
+        }
+        const result = await window.jianghuAxios(packageData);
+
+        window.vtoast.success('恢复成功');
+        this.showStandardAnswer = false;
+      },
+      // ---------- <<<<<<<<<<<<< 重做作业 uiAction ----------
+      async toggleAnswerDisplay() {
+        if (!this.isAssignmentSubmit) {
+          throw new Error('作业还没提交，不能切换答案的显示！');
         } else {
-          data.user_answer = question.user_answer;
+          if (this.answerType == '正确答案') {
+            this.assignmentStatusDesc = '已提交 | 正在查看正确答案';
+            this.assignmentAnswer = this.assignmentStandardAnswer;
+            this.showStandardAnswer = true;
+          } else {
+            this.assignmentStatusDesc = '已提交';
+            this.assignmentAnswer = this.assignmentUserAnswer;
+            this.showStandardAnswer = false;
+          }
+          console.log('[toggleAnswerDisplay] assignmentAnswer:', this.assignmentAnswer)
         }
-        data.endStatus = data.user_answer === question.answer ? 'right' : 'wrong';
-        const load = layer.load(1);
       },
-      // 上一题
-      slidePrev() {
-        this.t_assignmentSwiper.slidePrev();
+      async uploadAssignmentFile() {
+        const assignmentUploadData = this.userFileList;
+        const hasUpload = this.hasUploadFile();
+        if (hasUpload) {
+          await this.assignmentUpload({ data: assignmentUploadData });
+        }
       },
-      // 下一题
-      slideNext() {
-        this.t_assignmentSwiper.slideNext();
+      hasUploadFile() {
+        for (const id in this.userFileList) {
+          for (const type in this.userFileList[id]) {
+            if (typeof this.userFileList[id][type] !== 'string') {
+              return true;
+            }
+          }
+        }
+        return false;
       },
-      isSubmit() {
-        // 单选题 - single
-        // 多选题 - multiple
-        // 判断题 - judge
-        // 填空题 - fill
-        // 简答题 - short
+      async assignmentUpload({ data, load = false }) {
+        let that = this;
+        for (const index in data) {
+          await this.assignmentUploadForEach(data, index, that);
+        }
       },
-      getSpecialUrl(special) {
-        return (special.is_light ? this.pageUrl + '/course/detail' : this.pageUrl + '/course/detail') + '?id=' + special.id
+      async assignmentUploadForEach(data, index, that) {
+        for (const id in data) {
+          for (const type in data[id]) {
+            const file = data[id][type];
+            if (file && typeof file !== 'string') {
+              window.vtoast.loading(`附件${index + 1}上传 上传进度: 0.00%`);
+              const path = `/assignmentMaterial/${that.userInfo.userId}/${that.userAssignment.assignmentId}/`;
+              const { data: { status } } = await this.assignmentUploadByStream(file, path, that, index)
+              if (status === 'success') {
+                for (const item1 of that.userAssignment.assignmentUserAnswer) {
+                  if (item1.id === id) {
+                    item1.user.file[type] = path + file.name;
+                  }
+                  if (item1.component.itemList && item1.component.type === 'questionGroup') {
+                    for (const item2 of item1.component.itemList) {
+                      if (item2.id === id) {
+                        item2.user.file[type] = path + file.name;
+                      }
+                    }
+                  }
+                }
+                that.userFileList[id][type] = path + file.name;
+              }
+            }
+          }
+        }
       },
-      getSheetUrl() {
-        return this.pageUrl + '/assignment/sheet?assignmentId=' + this.t_assignmentId + '&record_id=' + this.t_recordId + '&index=' + this.t_activeIndex
+      async assignmentUploadByStream(file, path, that, i) {
+        return await window.jianghuAxios.httpUploadByStream({
+          file,
+          filenameStorage: file.name,
+          fileDirectory: path,
+          onProgress: (total, loaded) => {
+            that.progress = Number((loaded * 100 / total).toFixed(2));
+            window.vtoast.loading(`附件${i}上传 上传进度: ${that.progress}%`);
+            if (loaded === total) {
+              window.vtoast.success(`附件${i}上传 上传进度: 100%`);
+            }
+          }
+        })
       },
+      getUserFileList(assignmentUserAnswer) {
+        const fileList = {};
+        _.forEach(assignmentUserAnswer, ({ ...item }, index) => {
+          // fileList.push({ id: item.id, fileList: item.user.file })
+          fileList[item.id] = item.user.file;
+          if (item.component.type === 'questionGroup') {
+            item.component.itemList.forEach(e => {
+              fileList[e.id] = e.user.file;
+            })
+          }
+        })
+        return fileList;
+      }
+
     }
-  });
+  })
 </script>
-<style>
+<style scoped>
   body {
     background-color: #f5f5f5;
   }
@@ -502,6 +511,11 @@
     z-index: 6;
     width: 100%;
     height: 100%;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: #666;
   }
 </style>
 {% endblock %}

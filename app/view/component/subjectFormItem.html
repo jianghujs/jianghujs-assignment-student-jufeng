@@ -1,0 +1,254 @@
+<template id="subject-form-item">
+  <div class="swiper-slide mb-3">
+    <div class="type">{{ formItem.component.typeDesc }}</div>
+
+    <template v-if="formItem.component.type === 'singleSelect'">
+      <div class="question">
+        <p class="text-h6">{{ index+1 }}、{{ formItem.component.statement }}</p>
+        <div class="label-group">
+          <template v-for="(option, oIndex) in formItem.component.selectOptionList">
+            <label v-if="option" :key="option">
+              <input :name="formItem.id" v-model="formItem.user.answer" :value="option" :disabled="isSubmit || isReview"
+                type="radio" hidden>
+              <div :class="{
+                'ok': getIsRight(formItem, option),
+                'no': getIsError(formItem, option),
+              }">
+                {{ option }}
+              </div>
+            </label>
+          </template>
+        </div>
+      </div>
+    </template>
+    <template v-else-if="formItem.component.type === 'multipleSelect'">
+      <div class="question">
+        <p class="text-h6">{{ index+1 }}、{{ formItem.component.statement }}</p>
+        <div v-if="formItem.component.markdownContent" ref="assignmentMarkdownContent"
+          class="assignmentMarkdownContent markdown-body" :data-content="formItem.component.markdownContent"></div>
+        <div class="label-group">
+          <template v-for="(option, oIndex) in formItem.component.selectOptionList">
+            <label v-if="option" :key="option">
+              <input v-model="formItem.user.answer" :value="option" :disabled="isSubmit || isReview" type="checkbox"
+                hidden>
+              <div :class="{
+                'ok': getIsRight(formItem, option),
+                'no': getIsError(formItem, option),
+              }">
+                {{examOptionKey[oIndex]}}. {{ option }}
+              </div>
+            </label>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <template v-else-if="['textarea', 'questionAnswer', 'markdown'].includes(formItem.component.type)">
+      <div class="question">
+        <p class="text-h6">{{ index+1 }}、{{ formItem.component.statement }}</p>
+        <div v-if="formItem.component.markdownContent" ref="assignmentMarkdownContent"
+          class="assignmentMarkdownContent markdown-body" :data-content="formItem.component.markdownContent"></div>
+        <v-row>
+          <v-col v-if="formItem.component.type === 'markdown'" cols="12" class="answer-tip-col"
+            :style="{height: isSubmit ? 'auto': '400px'}">
+            <md2html :article-content="formItem.user.answer"></md2html>
+            <!-- <div v-else class="editorMdContainer" :id="'editorMdContainer-'+formItem.id" style="position: relative;">
+              <textarea style="display:none;">{{formItem.component.answer}}</textarea>
+            </div> -->
+          </v-col>
+          <v-col v-else cols="12" class="answer-tip-col">
+            <v-textarea :readonly="isSubmit || isReview" placeholder="请输入答案" v-model="formItem.user.answer" hide-details
+              class="cus-v-input mb-1" dense filled @blur="answerChange" single-line color="success" auto-grow
+              :rows="4"></v-textarea>
+          </v-col>
+        </v-row>
+      </div>
+    </template>
+
+    <!-- <div class="upload-box d-flex my-2" v-if="formItem.component.type !== 'displayText' && userFileList">
+      <upload v-for="(item, fileType, i) in userFileList[formItem.id]" ref="upload" :file-type="fileType" :key="i"
+        :value="userFileList[formItem.id][fileType]" :index="formItem.id" :i="i"
+        :style="{width: '33.3%'}" @change="onFileSave"></upload>
+    </div> -->
+
+    <template v-else-if="formItem.component.type === 'displayText'">
+      <div class="question">
+        <v-list-item-title class="formItem-title">{{ index+1 }}、 {{ formItem.component.statement }}</v-list-item-title>
+      </div>
+    </template>
+
+    <template v-else-if="formItem.component.type === 'fillBlank'">
+      <div class="question">
+
+        <v-list-item-title class="mb-3" style="white-space: normal;">
+          {{ index+1 }}、
+          <template v-for="(blank, blankIndex) in formItem.component.statement" :key="blankIndex">
+            <v-text-field class="fill-blank fill-blank-input" v-if="blank.type === 'input'"
+              :readonly="isSubmit || isReview" dense hide-details filled
+              v-model="formItem.user.answer[blank.id]"></v-text-field>
+            <span v-else>{{ blank.value }}</span>
+          </template>
+        </v-list-item-title>
+        <div v-if="formItem.component.markdownContent" ref="assignmentMarkdownContent"
+          class="assignmentMarkdownContent markdown-body" :data-content="formItem.component.markdownContent"></div>
+      </div>
+    </template>
+    <!-- <template v-else-if="formItem.component.type === 'questionGroup'">
+      <div class="question">
+        <p class="text-h6">{{ index+1 }}、{{ formItem.component.statement }}</p>
+        <div v-if="formItem.component.markdownContent" ref="assignmentMarkdownContent"
+          class="assignmentMarkdownContent markdown-body" :data-content="formItem.component.markdownContent"></div>
+        <slot name="questionGroup"></slot>
+      </div>
+    </template> -->
+
+    <div v-if="examReview && isSubmit" class="analysis">
+      <div :class="[examReview[formItem.id].isRight ? 'ok' : 'no']">回答{{ !examReview[formItem.id].isRight ? '错误' : '正确'
+        }}</div>
+      <div>
+        <div>正确答案：<div>{{ examReview[formItem.id].answerString }}</div>
+        </div>
+        <!-- <div>您的答案：<div>{{ formItem.user.answer }}</div>
+        </div> -->
+      </div>
+      <div v-if="examReview[formItem.id].score || examReview[formItem.id].score === 0">
+        考试评分：{{examReview[formItem.id].score}}</div>
+
+      <div v-if="examReview[formItem.id].comment">
+        <div class="red--text">考试评语：</div>
+        <p class="red--text">{{examReview[formItem.id].comment}}</p>
+      </div>
+
+      <v-textarea hide-details v-if="isReview" class="student-remark" placeholder="学生备注" v-model="formItem.user.remark"
+        filled single-line :rows="2" auto-grow />
+    </div>
+  </div>
+</template>
+
+{% include 'component/md2html.html' %}
+<script>
+  Vue.component("subject-form-item", {
+    template: '#subject-form-item',
+    vuetify: new Vuetify(),
+    name: 'subject-form-item',
+    props: ['formItem', 'index', 'isSubmit', 'isReview', 'examReview', 'userFileList'],
+    data: () => {
+      return {
+        examOptionKey: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'],
+      }
+    },
+    computed: {},
+    destroyed() { },
+    watch: {},
+    async created() {
+      // this.markdownToHtml();
+    },
+    methods: {
+      getIsRight(formItem, option) {
+        return formItem.user.answer === option && this.isSubmit && (this.examReview && this.examReview[formItem.id].isRight)
+      },
+      getIsError(formItem, option) {
+        return formItem.user.answer === option && this.isSubmit && (this.examReview && !this.examReview[formItem.id].isRight)
+      },
+      answerChange() {
+        // this.$emit('answer-change', this.formItem.id, this.formItem.user.answer);
+      },
+      markdownToHtml() {
+        // console.log('markdownToHtml', this.$refs['assignmentMarkdownContent' + this.formItem.id])
+        // this.$refs['assignmentMarkdownContent' + this.formItem.id].innerHTML = ArticleMarkdownEngine.md2html(this.formItem.component.markdownContent);
+        // const artContentRefs = document.querySelectorAll('.assignmentMarkdownContent');
+        // artContentRefs.forEach(artContent => {
+        //   const contentText = this.$refs.assignmentMarkdownContent.dataset.content;
+        //   artContent.innerHTML = ArticleMarkdownEngine.md2html(contentText);
+        // })
+        // if (formItem.component.markdownContent) {
+        // console.log('markdownToHtml', this.formItem.component.markdownContent)
+        const containerId = 'editorMdContainer-' + this.formItem.id;
+        editormd.markdownToHTML(containerId, {
+          // markdown: formItem.component.markdownContent, //待渲染的markdown文本字符串
+          markdown: this.formItem.component.answer, //待渲染的markdown文本字符串
+          tocContainer: '#' + containerId,	//指定目录容器的id
+          tocDropdown: false
+        })
+      },
+      onFileSave(id, type, file) {
+        this.userFileList[id][type] = file;
+      },
+    },
+  })
+</script>
+
+<style scoped>
+  .formItem-title {
+    white-space: normal;
+  }
+
+  .answer-tip-col {
+    padding: 3px 15px;
+  }
+
+  .answer-tip-box {
+    padding: 10px 0;
+  }
+
+  .upload-box {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+  }
+
+  .editorMdContainer .editormd-mask {
+    position: absolute !important;
+    background-color: #000 !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    right: 0 !important;
+  }
+
+  .editorMdContainer .editormd-menu {
+    padding-left: 10px !important;
+  }
+
+  .editorMdContainer .editormd-dialog {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50px !important;
+    transform: translateX(-50%) !important;
+    width: 340px !important;
+  }
+
+  .editorMdContainer .editormd-dialog .editormd-dialog-header {
+    padding: 10px !important;
+  }
+
+  .editorMdContainer .editormd-dialog .editormd-dialog-container {
+    padding: 15px !important;
+  }
+
+  .editorMdContainer .editormd-form input[type=text] {
+    width: calc(100% - 80px) !important;
+  }
+
+  .student-remark textarea {
+    color: rgb(0, 172, 37) !important;
+  }
+
+  .fill-blank {
+    display: inline-block;
+
+  }
+
+  .fill-blank-input {
+    border-bottom: 2px solid gray;
+    margin-left: 5px !important;
+    margin-right: 5px !important;
+    width: 100px;
+  }
+
+  .fill-blank-input .v-input__slot {
+    min-height: 30px !important;
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+  }
+</style>
