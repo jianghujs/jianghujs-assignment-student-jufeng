@@ -1,0 +1,111 @@
+<!-- course/list.html >>>>>>>>>>>>> -->
+{% extends "template/jfTemplate.html" %}
+{% block htmlHead %}
+
+{% endblock %}
+{% block vueTemplate %}
+<script type="text/html" id="app-template">
+  <div v-cloak class="goodsClass thematic-details">
+    <div class="problem-section">
+      <ul>
+        <li v-for="item in assignmentList" :key="item.id">
+          <div class="title">{{ item.articleTitle }}</div>
+          <div class="group">
+            <div class="people">
+              <span>{{ item.assignmentSubmitStatus}}</span>
+              <span>{{ item.assignmentReviewStatus}}</span>
+              </div>
+            <a :href="`/<$ ctx.app.config.appId $>/page/assignmentPaper?assignmentId=${item.assignmentId}`">
+              <img src="<$ uploadUrl $>/img/question07.png">练习
+            </a>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</script>
+{% endblock %}
+
+{% block vueScript %}
+
+<script>
+  new Vue({
+    el: '#app',
+    template: '#app-template',
+    data: {
+      constantCollection: {
+        assignmentStatus: {
+          save: '已保存',
+          submit: '已提交',
+          new: '新作业',
+        },
+        assignmentReviewStatus: {
+          publish: '已批改',
+        },
+      },
+      isLoading: false,
+      assignmentList: []
+    },
+    created() {
+      this.getAssignmentList();
+    },
+    methods: {
+      async getAssignmentList() {
+        this.isLoading = true;
+        const result = await window.jianghuAxios({
+          data: {
+            appData: {
+              pageId: 'assignmentManagement',
+              actionId: 'selectItemList',
+              actionData: {},
+              orderBy: [{ column: 'operationAt', order: 'desc' }]
+            }
+          }
+        });
+        this.isLoading = false;
+        const { rows } = result.data.appData.resultData
+        rows.forEach(assignment => {
+          assignment.assignmentSubmitStatus = this.constantCollection.assignmentStatus[assignment.assignmentSubmitStatus]
+          assignment.assignmentReviewStatus = this.constantCollection.assignmentReviewStatus[assignment.assignmentReviewStatus]
+        })
+        
+        this.assignmentList = rows;
+      }
+    }
+  });
+</script>
+<style>
+  .free {
+    margin-top: .1rem;
+    font-weight: 400;
+    font-size: .22rem;
+    line-height: .38rem;
+    color: #FF6B00;
+  }
+
+  .nothing {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4.14rem;
+    height: 3.36rem;
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+  }
+
+  body {
+    padding-bottom: 1.1rem;
+    padding-bottom: calc(1.1rem + constant(safe-area-inset-bottom));
+    padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
+  }
+
+  .text-sm {
+    font-size: 0.4rem
+  }
+
+  .bg-white {
+    background-color: #ffffff
+  }
+</style>
+{% endblock %}
+<!-- <<<<<<<<<<<<< course/list.html -->

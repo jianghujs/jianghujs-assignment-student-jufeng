@@ -1,0 +1,56 @@
+{
+  "RECORDS": [
+    {
+      "id": 2,
+      "pageId": "help",
+      "pageName": "帮助",
+      "pageFile": null,
+      "pageType": "dynamicInMenu",
+      "sort": "11",
+      "pageHook": null,
+      "operation": "insert",
+      "operationByUserId": null,
+      "operationByUser": null,
+      "operationAt": null
+    },
+    {
+      "id": 3,
+      "pageId": "login",
+      "pageName": "登陆",
+      "pageFile": null,
+      "pageType": "",
+      "sort": "",
+      "pageHook": null,
+      "operation": "insert",
+      "operationByUserId": null,
+      "operationByUser": null,
+      "operationAt": null
+    },
+    {
+      "id": 6,
+      "pageId": "manual",
+      "pageName": "操作手册",
+      "pageFile": null,
+      "pageType": null,
+      "sort": "0",
+      "pageHook": null,
+      "operation": "insert",
+      "operationByUserId": null,
+      "operationByUser": null,
+      "operationAt": null
+    },
+    {
+      "id": 30,
+      "pageId": "home",
+      "pageName": "文档",
+      "pageFile": null,
+      "pageType": "seo",
+      "sort": null,
+      "pageHook": "{\r\n  \"beforeHook\":[\r\n    {\"field\": \"constantUiMap\", \"service\": \"constantUi\", \"serviceFunc\": \"getConstantUiMap\"}\r\n\t]\r\n}",
+      "operation": "insert",
+      "operationByUserId": null,
+      "operationByUser": null,
+      "operationAt": null
+    }
+  ]
+}

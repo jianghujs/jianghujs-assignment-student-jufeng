@@ -1,0 +1,749 @@
+<!-- baseLogin.html >>>>>>>>>>>>> -->
+<script type="text/html" id="baseLogin">
+  <div>
+    <div :class="{ mask: loginShow }" @touchmove.prevent @click="$emit('login-close')"></div>
+    <form :class="{ on: loginShow }" class="base-login">
+      <a v-show="cancelBtn" href="javascript:" @click="$emit('login-close')">
+        <i class="iconfont iconguanbi"></i>
+      </a>
+      <div v-show="state != 3">{{ state == 1 ? '注册账号' : '忘记密码' }}</div>
+      <div v-show="state == 3">
+        <label v-if="!isWeChat">
+          <input v-model="type" :value="1" type="radio" hidden><span>账号登录</span>
+        </label>
+        <label>
+          <input v-model="type" :value="2" type="radio" hidden><span>{{ isWeChat ? '绑定手机号' : '手机登录' }}</span>
+        </label>
+      </div>
+      <label>
+        <i class="iconfont iconshouji"></i>
+        <input v-model.trim="phone" type="tel" maxlength="11" placeholder="请填写账号">
+      </label>
+      <div v-show="state != 3 || type == 2">
+        <label>
+          <i class="iconfont iconyanzhengma"></i>
+          <input v-model.trim="code" type="text" placeholder="请填写验证码">
+        </label>
+        <button type="button" :disabled="count >= 0" id="getCode">{{ count < 0 ? '获取验证码' : '重新获取(' + count + 's)'
+            }}</button>
+      </div>
+      <label v-show="(state != 3 || type == 1)">
+        <i class="iconfont iconmima"></i>
+        <input v-model.trim="pwd" type="password" maxlength="16" :placeholder="pwdPlaceholder">
+      </label>
+      <div v-show="state != 2">
+        <label>
+          <input v-model="agree" type="checkbox" hidden>
+          <i class="iconfont icongouxuan"></i>
+          <span>已阅读并同意</span>
+        </label>
+        <a href="javascript:" @click="goAgree">《{{ siteName }}用户协议》</a>
+      </div>
+      <div>
+        <button v-show="state == 1" type="button" @click="register">立即注册</button>
+        <button v-show="state == 2" type="button" @click="register">确认</button>
+        <button v-show="state == 3" type="button" @click="login">立即登录</button>
+      </div>
+      <div>
+        <span v-show="state == 1">已有账号？</span>
+        <a v-show="state != 3" href="javascript:" @click="state = 3">立即登录</a>
+        <a v-show="state == 3 && !isWeChat" href="javascript:" @click="state = 1">立即注册</a>
+        <a v-show="state == 3 && !isWeChat" href="javascript:" @click="state = 2">忘记密码？</a>
+      </div>
+      <div v-if="hasCopyright" class="copyright">{{ nncnL_copyright }}</div>
+      <div v-else class="copyright">© 2014-2022 <a href="../../../../../../jianghujs/index.html">jianghujs</a>
+      </div>
+    </form>
+    <div id="captcha"></div>
+  </div>
+</script>
+<script>
+  Vue.component('baseLogin', {
+    template: "#baseLogin",
+    vueComponent: 'baseLogin',
+    props: {
+      loginShow: {
+        type: Boolean,
+        default: false
+      },
+      siteName: {
+        type: String,
+        default: ''
+      },
+      cancelBtn: {
+        type: Boolean,
+        default: true
+      }
+    },
+    data() {
+      return {
+        state: 3,  // 1 注册 2 找回密码 3 登录
+        type: 1,  // 1 账号登录 2 手机登录
+        phone: '',
+        code: '',
+        pwd: '',
+        agree: false,
+        TIME_COUNT: 60,
+        count: -1,
+        isWeChat: false,
+        hasCopyright: false,
+        nncnL_copyright: ''
+      };
+    },
+    computed: {
+      pwdPlaceholder() {
+        if (this.state == 1) {
+          return '请输入8-16位字母加数字组合密码';
+        } else if (this.state == 2) {
+          return '请输入8-16位字母加数字组合新密码';
+        } else if (this.type == 1) {
+          return '请填写密码';
+        }
+      }
+    },
+    watch: {
+      loginShow(val) {
+        if (val) {
+          this.state = 3;
+          this.type = this.isWeChat ? 2 : 1;
+          this.phone = '';
+          this.code = '';
+          this.pwd = '';
+          this.agree = false;
+          if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+            this.count = -1;
+          }
+          this.$nextTick(function () {
+            var vm = this;
+            $('#captcha').slideVerify({
+              baseUrl: '/wap/auth_api',
+              mode: 'pop',
+              containerId: 'getCode',
+              beforeCheck() {
+                var flag = true;
+                return flag
+              },
+              ready() { },
+              success(params) {
+                vm.getCode(params.captchaVerification);
+              },
+              error() {
+                console.error('slideVerify');
+              },
+              beforeShow() {
+                var flag = true;
+                if (!vm.phone) {
+                  flag = false;
+                  layer.msg('请输入手机号');
+                } else if (!/^1[3456789]\d{9}$/.test(vm.phone)) {
+                  flag = false;
+                  layer.msg('手机号错误');
+                }
+                return flag;
+              }
+            });
+          });
+        }
+      },
+      state() {
+        this.phone = '';
+        this.code = '';
+        this.pwd = '';
+        this.agree = false;
+        if (this.timer) {
+          clearInterval(this.timer);
+          this.timer = null;
+          this.count = -1;
+        }
+      }
+    },
+    created() {
+      var ua = navigator.userAgent.toLowerCase();
+      if (ua.match(/MicroMessenger/i) == 'micromessenger') {
+        this.isWeChat = true;
+        this.type = 2;
+      }
+      this.getCopyright();
+    },
+    methods: {
+      // 获取验证码
+      getCode(captchaVerification) {
+        var vm = this;
+        if (!this.phone) {
+          helper.pushMsg('请输入手机号');
+          return;
+        }
+        if (!/^1[3456789]\d{9}$/.test(this.phone)) {
+          helper.pushMsg('手机号错误');
+          return;
+        }
+        this.count = this.TIME_COUNT;
+        this.timer = setInterval(function () {
+          vm.count--;
+          if (vm.count < 0) {
+            clearInterval(vm.timer);
+            vm.timer = null;
+          }
+        }, 1000);
+        var index = layer.load(1);
+        // axios.post('../auth_api/code', {
+        //     phone: this.phone,
+        //     captchaVerification: captchaVerification,
+        //     captchaType: 'blockPuzzle'
+        // }).then(function (res) {
+        //     layer.msg(res.data.msg);
+        //     if (res.data.code === 400 && vm.timer) {
+        //         clearInterval(vm.timer);
+        //         vm.timer = null;
+        //         vm.count = -1;
+        //     }
+        // }).catch(function (err) {
+        //     console.error(err);
+        // }).then(function () {
+        //     layer.close(index);
+        // });
+      },
+      // 注册账号、忘记密码
+      register() {
+        var vm = this;
+        if (!this.phone) {
+          helper.pushMsg('请填写手机号');
+          return;
+        }
+        if (!/^1[3456789]\d{9}$/.test(this.phone)) {
+          helper.pushMsg('手机号错误');
+          return;
+        }
+        if (!this.code) {
+          helper.pushMsg('请填写验证码');
+          return;
+        }
+        if (!/^\d{6}$/.test(this.code)) {
+          helper.pushMsg('验证码错误');
+          return;
+        }
+        if (!this.pwd) {
+          helper.pushMsg('请填写密码');
+          return;
+        }
+        if (!/^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{8,16}$/.test(this.pwd)) {
+          helper.pushMsg('请填写8-16位字母加数字组合密码');
+          return;
+        }
+        if (this.state == 1) {
+          if (!this.agree) {
+            helper.pushMsg('请勾选用户协议');
+            return;
+          }
+        }
+        if (this.timer) {
+          clearInterval(this.timer);
+          this.timer = null;
+          vm.count = -1;
+        }
+        console.log('register');
+      },
+      // 立即登录
+      login() {
+        if (!this.phone) {
+          helper.pushMsg('请填写手机号');
+          return;
+        }
+        if (!/^1[3456789]\d{9}$/.test(this.phone)) {
+          helper.pushMsg('手机号错误');
+          return;
+        }
+        if (this.type == 1) {
+          if (!this.pwd) {
+            helper.pushMsg('请填写密码');
+            return;
+          }
+        } else {
+          if (!this.code) {
+            helper.pushMsg('请填写验证码');
+            return;
+          }
+          if (!/^\d{6}$/.test(this.code)) {
+            helper.pushMsg('验证码错误');
+            return;
+          }
+        }
+        if (!this.agree) {
+          helper.pushMsg('请勾选用户协议');
+          return;
+        }
+        this.type == 1 ? this.pwdLogin() : this.smsLogin();
+      },
+      // 账号登录
+      pwdLogin() {
+        console.log('pwdLogin');
+      },
+      // 手机登录
+      smsLogin() {
+        console.log('smsLogin');
+      },
+      // 点击协议
+      goAgree() {
+        window.location.assign('<$ pageUrl $>/index/agree');
+      },
+      del_redis_phone() {
+        var vm = this;
+        if (!this.phone) {
+          return layer.msg('请输入手机号');
+        }
+        if (!/^1[3456789]\d{9}$/.test(this.phone)) {
+          return layer.msg('手机号错误');
+        }
+        if (!this.code) {
+          return layer.msg('请填写验证码');
+        }
+        var index = layer.load(1);
+        console.log('del_redis_phone');
+      },
+      getCopyright() {
+        console.log('getCopyright');
+      }
+    },
+  });
+</script>
+<style scoped>
+  .mask.on {
+    display: block;
+  }
+
+  .base-login {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 56;
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-radius: .2rem .2rem 0 0;
+    background: #FFFFFF;
+    -webkit-transform: translateY(100%);
+    -moz-transform: translateY(100%);
+    -ms-transform: translateY(100%);
+    -o-transform: translateY(100%);
+    transform: translateY(100%);
+    -webkit-transition: -webkit-transform 0.3s;
+    transition: -webkit-transform 0.3s;
+    -o-transition: -o-transform 0.3s;
+    -moz-transition: transform 0.3s, -moz-transform 0.3s;
+    transition: transform 0.3s;
+    transition: transform 0.3s, -webkit-transform 0.3s, -moz-transform 0.3s, -o-transform 0.3s;
+  }
+
+  .base-login.on {
+    -webkit-transform: translateY(0);
+    -moz-transform: translateY(0);
+    -ms-transform: translateY(0);
+    -o-transform: translateY(0);
+    transform: translateY(0);
+  }
+
+  .base-login>a:first-child {
+    position: absolute;
+    top: .3rem;
+    right: .3rem;
+    z-index: 2;
+  }
+
+  .base-login>a:first-child .iconfont {
+    font-size: .27rem;
+    color: #8A8A8A;
+  }
+
+  .base-login>div:nth-child(2) {
+    padding: .4rem 0 .33rem;
+    font-weight: bold;
+    font-size: .36rem;
+    line-height: .5rem;
+    text-align: center;
+    color: #282828;
+  }
+
+  .base-login>div:nth-child(3) {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    -moz-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    padding: .4rem 0 .33rem;
+    font-size: .36rem;
+    line-height: .5rem;
+    color: #282828;
+  }
+
+  .base-login>div:nth-child(3) label~label {
+    margin: 0 0 0 1rem;
+  }
+
+  .base-login>div:nth-child(3) input:checked+span {
+    font-weight: bold;
+    color: #2C8EFF;
+  }
+
+  .base-login>label:nth-child(4) {
+    position: relative;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -moz-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    padding: .44rem .6rem .33rem;
+  }
+
+  .base-login>label:nth-child(4)::after {
+    content: "";
+    position: absolute;
+    right: .45rem;
+    bottom: 0;
+    left: .45rem;
+    z-index: 2;
+    height: 1px;
+    border-width: 0 0 1px;
+    border-style: solid;
+    border-color: #CCCCCC;
+  }
+
+  .base-login .iconfont {
+    font-size: .4rem;
+    color: #C3C3C3;
+  }
+
+  .base-login>label:nth-child(4) input {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -moz-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    min-width: 0;
+    margin: 0 0 0 .25rem;
+    font-size: .3rem;
+    line-height: .42rem;
+    color: #282828;
+  }
+
+  .base-login>label:nth-child(4) input::-webkit-input-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(4) input:-moz-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(4) input::-moz-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(4) input:-ms-input-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(4) input::-ms-input-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(4) input::placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>div:nth-child(5) {
+    position: relative;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -moz-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    padding: .44rem .6rem .33rem;
+  }
+
+  .base-login>div:nth-child(5)::after {
+    content: "";
+    position: absolute;
+    right: .45rem;
+    bottom: 0;
+    left: .45rem;
+    z-index: 2;
+    height: 1px;
+    border-width: 0 0 1px;
+    border-style: solid;
+    border-color: #CCCCCC;
+  }
+
+  .base-login>div:nth-child(5) label {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -moz-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -moz-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .base-login>div:nth-child(5) input {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -moz-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    min-width: 0;
+    margin: 0 0 0 .25rem;
+    font-size: .3rem;
+    line-height: .42rem;
+    color: #282828;
+  }
+
+  .base-login>div:nth-child(5) input::-webkit-input-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>div:nth-child(5) input:-moz-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>div:nth-child(5) input::-moz-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>div:nth-child(5) input:-ms-input-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>div:nth-child(5) input::-ms-input-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>div:nth-child(5) input::placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>div:nth-child(5) button {
+    font-size: .26rem;
+    line-height: .37rem;
+    color: #2C8EFF;
+  }
+
+  .base-login>div:nth-child(5) button:disabled {
+    color: #999999;
+  }
+
+  .base-login>div:nth-child(5) button img {
+    display: block;
+    width: 1.4rem;
+    height: .58rem;
+  }
+
+  .base-login>label:nth-child(6) {
+    position: relative;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -moz-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    padding: .44rem .6rem .33rem;
+  }
+
+  .base-login>label:nth-child(6)::after {
+    content: "";
+    position: absolute;
+    right: .45rem;
+    bottom: 0;
+    left: .45rem;
+    z-index: 2;
+    height: 1px;
+    border-width: 0 0 1px;
+    border-style: solid;
+    border-color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(6) input {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -moz-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    min-width: 0;
+    margin: 0 0 0 .25rem;
+    font-size: .3rem;
+    line-height: .42rem;
+    color: #282828;
+  }
+
+  .base-login>label:nth-child(6) input::-webkit-input-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(6) input:-moz-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(6) input::-moz-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(6) input:-ms-input-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(6) input::-ms-input-placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>label:nth-child(6) input::placeholder {
+    color: #CCCCCC;
+  }
+
+  .base-login>div:nth-child(7) {
+    padding: .3rem .6rem 0;
+    font-size: 0;
+  }
+
+  .base-login>div:nth-child(7) label {
+    font-size: 0;
+  }
+
+  .base-login>div:nth-child(7) .iconfont {
+    display: inline-block;
+    width: .3rem;
+    height: .3rem;
+    border: 1px solid #C3C3C3;
+    border-radius: 50%;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    vertical-align: middle;
+    font-size: 0;
+    line-height: .3rem;
+    text-align: center;
+    color: #C3C3C3;
+  }
+
+  .base-login>div:nth-child(7) input:checked+.iconfont {
+    border: 0;
+    background: #2C8EFF;
+    font-size: .2rem;
+    color: #FFFFFF;
+  }
+
+  .base-login>div:nth-child(7) label span {
+    margin-left: .12rem;
+    vertical-align: middle;
+    font-size: .24rem;
+    line-height: .33rem;
+    color: #B2B2B2;
+  }
+
+  .base-login>div:nth-child(7) a {
+    vertical-align: middle;
+    font-size: .24rem;
+    line-height: .33rem;
+    color: #2C8EFF;
+  }
+
+  .base-login>div:nth-child(8) {
+    padding: .6rem .3rem 0;
+  }
+
+  .base-login>div:nth-child(8) button {
+    width: 100%;
+    height: .86rem;
+    border-radius: .43rem;
+    background: #2C8EFF;
+    font-size: .3rem;
+    color: #FFFFFF;
+  }
+
+  .base-login>div:nth-child(9) {
+    padding: .25rem 0 .35rem;
+    font-size: 0;
+    text-align: center;
+  }
+
+  .base-login>div:nth-child(9) span {
+    font-size: .26rem;
+    line-height: .37rem;
+    color: #999999;
+  }
+
+  .base-login>div:nth-child(9) a {
+    font-size: .26rem;
+    line-height: .37rem;
+    color: #999999;
+  }
+
+  .base-login>div:nth-child(9) a:nth-child(2) {
+    color: #2C8EFF;
+  }
+
+  .base-login>div:nth-child(9) a:nth-child(3) {
+    padding: 0 .2rem 0 0;
+  }
+
+  .base-login>div:nth-child(9) a:last-child {
+    position: relative;
+    padding: 0 0 0 .2rem;
+  }
+
+  .base-login>div:nth-child(9) a:last-child::before {
+    content: "";
+    position: absolute;
+    top: .08rem;
+    bottom: .08rem;
+    left: 0;
+    z-index: 2;
+    width: 1px;
+    border-width: 0 0 0 1px;
+    border-style: solid;
+    border-color: #ABABAB;
+  }
+
+  .base-login .copyright {
+    padding: .28rem 0 .3rem;
+    text-align: center;
+    font-size: .2rem;
+    line-height: .28rem;
+    color: #999999;
+  }
+
+  .base-login .copyright a {
+    color: #478BF1;
+  }
+
+  #captcha {
+    z-index: 57;
+  }
+</style>
+<!-- <<<<<<<<<<<<< baseLogin.html -->

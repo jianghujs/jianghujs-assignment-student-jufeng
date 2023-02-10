@@ -1,0 +1,71 @@
+<!-- quickMenu.html >>>>>>>>>>>>> -->
+<script type="text/html" id="quickMenu">
+  <div v-if="menuList.length" :style="{ top: top }" class="quick" @touchmove.stop.prevent="onMove">
+    <div v-show="open" class="menu">
+      <a v-for="item in menuList" :key="item.id" :href="item.url">
+        <img :src="item.icon" :alt="item.name">
+      </a>
+    </div>
+    <div class="main quick-main" @click="open = !open">
+      <img
+        :src="open ? '<$ uploadUrl $>/img/quick_open.gif' : '<$ uploadUrl $>/img/quick_close.gif'">
+    </div>
+  </div>
+</script>
+
+<script>
+  Vue.component('quickMenu', {
+    template: "#quickMenu",
+    vueComponent: 'quickMenu',
+    data() {
+      return {
+        top: '50%',
+        open: false,
+        menuList: [
+          {
+            "id": 212,
+            "name": "首页",
+            "url": "/student/page/index/index",
+            "icon": "<$ uploadUrl $>/img/quick_home.png"
+          },
+          {
+            "id": 213,
+            "name": "客服",
+            "url": "/student/page/service/service_list",
+            "icon": "<$ uploadUrl $>/img/quick_chat.png"
+          },
+          {
+            "id": 214,
+            "name": "我的",
+            "url": "/student/page/my/index",
+            "icon": "<$ uploadUrl $>/img/quick_user.png"
+          }
+        ]
+      };
+    },
+    created() {
+      this.onReady();
+    },
+    methods: {
+      onReady() {
+        console.log('onReady');
+      },
+      onMove(event) {
+        var clientHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight,
+          tithe = clientHeight / 10,
+          min = tithe * 2,
+          max = tithe * 8,
+          top = 0;
+        if (min >= event.touches[0].clientY) {
+          top = clientHeight / 10 * 2;
+        } else if (event.touches[0].clientY >= max) {
+          top = clientHeight / 10 * 8;
+        } else {
+          top = event.touches[0].clientY;
+        }
+        this.top = top + 'px';
+      }
+    }
+  });
+</script>
+<!-- <<<<<<<<<<<<< quickMenu.html -->

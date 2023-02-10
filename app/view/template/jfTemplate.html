@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+{% set static = "/" + ctx.app.config.appId + "/public" %}
+{% set uploadUrl = "/" + ctx.app.config.appId + "/upload" %}
+{% set pageUrl = "/" + ctx.app.config.appId + "/page" %}
+<html>
+
+<head>
+  <!-- 设置页面默认参数 >>>>>>>>>>>>> -->
+  <meta charset="utf-8">
+  <title>
+    <$ ctx.app.config.appTitle $>
+  </title>
+  <meta name="viewport"
+    content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no">
+  <meta name="browsermode" content="application" />
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta http-equiv="Cache-Control" content="no-siteapp"><!-- 禁止百度转码 -->
+  <meta name="screen-orientation" content="portrait"><!-- uc强制竖屏 -->
+  <meta name="x5-orientation" content="portrait"><!-- QQ强制竖屏 -->
+  <!-- <<<<<<<<<<<<< 设置页面默认参数 -->
+
+  <!-- 加载第三方库样式 >>>>>>>>>>>>> -->
+  {% include 'common/resetCss.html' %}
+  {% include 'common/baseCss.html' %}
+  <link rel="stylesheet" type="text/css" href="<$ static $>/plugin/swiper5/css/swiper.min.css">
+  <link rel="stylesheet" type="text/css" href="<$ static $>/plugin/iconfont/iconfont.css" />
+  {% include 'common/styleCss.html' %}
+  <!-- <link rel="stylesheet" type="text/css" href="<$ static $>/plugin/fontAwesome/font-awesome.min.css?v=4.3.0" media="all"> -->
+  <!-- <<<<<<<<<<<<< 加载第三方库样式 -->
+
+  <!-- 加载第三方库脚本 >>>>>>>>>>>>> -->
+  <script type="text/javascript" src="<$ static $>/lib/jquery/jquery.min.js"></script>
+  <script type="text/javascript" src="<$ static $>/plugin/iconfont/iconfont1/iconfont.js"></script>
+  <script src="<$ static $>/lib/lodash/lodash.min.js"></script>
+  <script src="<$ static $>/lib/dayjs/dayjs.min.js"></script>
+  <script src="<$ static $>/lib/vue/vue.min.js"></script>
+  <script src="<$ static $>/plugin/layer/layer.js"></script>
+  <script src="<$ static $>/lib/axios/axios.min.js"></script>
+  <!-- <<<<<<<<<<<<< 加载第三方库脚本 -->
+
+
+  {% block htmlHead %}{% endblock %}
+
+</head>
+<body>
+
+  
+  <div v-cloak id="app">
+    {% block vueTemplate %}
+    {% endblock %}
+  </div>
+
+  <!-- 加载工具脚本 >>>>>>>>>>>>> -->
+  {% include 'utility/helper.html' %}
+  {% include 'utility/regVerify.html' %}
+  <!-- <<<<<<<<<<<<< 加载工具脚本 -->
+
+  <!-- 加载全局组件 >>>>>>>>>>>>> -->
+  {% include 'utility/rewriteFontSize.html' %}
+  {% include 'common/prepareAppInfoV4.html' %}
+  {% include 'common/jianghuAxios.html' %}
+  <!-- <<<<<<<<<<<<< 加载全局组件 -->
+
+  {% block vueScript %}
+  {% endblock %}
+</body>

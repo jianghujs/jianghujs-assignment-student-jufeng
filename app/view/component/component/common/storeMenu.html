@@ -1,0 +1,34 @@
+<!-- storeMenu.html >>>>>>>>>>>>> -->
+{% set menu = [
+        {'pageId': 'index/index','name': '首页','class': uploadUrl + '/img/store_menu/index.png','hove_class': uploadUrl + '/img/store_menu/index-active.png'},
+        {'pageId': 'course/list','name': '课程','class': uploadUrl + '/img/store_menu/course.png','hove_class': uploadUrl + '/img/store_menu/course-active.png'}
+        
+    ] 
+%}
+<!-- ,
+{'pageId': 'store/index','name': '商城','class': uploadUrl + '/img/store_menu/store.png','hove_class': uploadUrl + '/img/store_menu/store-active.png'},
+{'pageId': 'my/index', 'name': '我的','class': uploadUrl + '/img/store_menu/my.png','hove_class': uploadUrl + '/img/store_menu/my-active.png'} -->
+<footer id="footer" class="footer-menu acea-row row-middle" ref="storeMenu" @touchmove.prevent>
+    {% for vo in menu %}
+
+    <!-- TODO 判断页面路径让图标高亮 -->
+    {% set menuPath = pageUrl + '/' + vo.pageId %}
+    {% if request.url.includes(menuPath) %}
+        {% set checked = true  %}
+    {% else %}
+        {% set checked = false  %}
+    {% endif %}
+    <a class="{% if checked %} on {% endif %}" href="<$ pageUrl + '/' + vo['pageId'] $>">
+        
+        <div class="pictrue"><img src="{% if checked %}<$ vo.hove_class $>{% else %}<$ vo.class $>{% endif %}"></div>
+        <div class="name"><$ vo['name'] $></div>
+    </a>
+    {% endfor %}
+</footer>
+
+<style>
+.footer-menu {
+    z-index: 2;
+}
+</style>
+<!-- <<<<<<<<<<<<< storeMenu.html -->

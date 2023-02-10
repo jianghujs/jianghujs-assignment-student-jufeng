@@ -1,0 +1,92 @@
+<!-- recommendPoster.html >>>>>>>>>>>>> -->
+<script type="text/html" id="recommendPoster">
+  <div class="advert">
+    <div id="swiper7" class="swiper-container" @click="advertClick">
+      <div class="swiper-wrapper">
+        <div v-for="item in advertList" :key="item.id" :data-url="item.url" class="swiper-slide">
+          <img :src="item.banner">
+        </div>
+      </div>
+    </div>
+    <div class="swiper-pagination advert-pagination"></div>
+  </div>
+</script>
+<script>
+  Vue.component('recommendPoster', {
+    template: "#recommendPoster",
+    vueComponent: 'recommendPoster',
+    props: {
+      advertList: {
+        type: Array,
+        default() {
+          return [];
+        }
+      }
+    },
+    data() {
+      return {
+        swiperOptions: {
+          autoplay: true,
+          loop: true,
+          pagination: {
+            el: '.advert-pagination'
+          },
+          uniqueNavElements: false
+        }
+      };
+    },
+    mounted() {
+      this.$nextTick(function () {
+        this.swiper7 = new Swiper('#swiper7', this.swiperOptions);
+      });
+    },
+    methods: {
+      advertClick() {
+        var url = this.swiper7.clickedSlide.dataset.url;
+        if (url.indexOf('http') === -1 || url.indexOf('http')) {
+          return;
+        }
+        window.location = url;
+      }
+    },
+  });
+</script>
+<style>
+  .advert {
+    position: relative;
+    padding: .14rem .3rem .38rem;
+    margin-top: .14rem;
+    background-color: #fff;
+}
+
+.advert img {
+    display: block;
+    width: 100%;
+    height: 2rem;
+    object-fit: contain;
+}
+
+.advert .swiper-pagination {
+    bottom: .14rem;
+    left: 0;
+    z-index: 1;
+    width: 100%;
+    font-size: 0;
+}
+
+.advert .swiper-pagination-bullet {
+    width: .1rem;
+    height: .1rem;
+    border-radius: .05rem;
+    margin: 0 .05rem;
+    background: #b4b4b4;
+    opacity: .5;
+}
+
+.advert .swiper-pagination-bullet-active {
+    width: .2rem;
+    background: #2c8eff;
+    opacity: 1;
+}
+</style>
+<!-- <<<<<<<<<<<<< recommendPoster.html -->
