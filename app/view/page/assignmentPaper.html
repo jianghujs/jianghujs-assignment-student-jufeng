@@ -25,9 +25,11 @@
     </div>
 
     <!-- 答题body -->
-    <div>
-      <subject-form-item v-for="(formItem, index) in assignmentAnswer" :key="index" :form-item="formItem" :index="index"
-          :is-submit="isAssignmentSubmit" :is-review="isAssignmentReview" :exam-review="assignmentReview" :user-file-list="userFileList"></subject-form-item>
+    <div class="swiper-container swiper-no-swiping">
+        <div class="swiper-wrapper">
+        <subject-form-item v-for="(formItem, index) in assignmentAnswer" :key="index" :form-item="formItem" :index="index"
+            :is-submit="isAssignmentSubmit" :is-review="isAssignmentReview" :exam-review="assignmentReview" :user-file-list="userFileList"></subject-form-item>
+      </div>
     </div>
 
     <!-- 底部操作栏 -->
@@ -45,7 +47,7 @@
             <div>下一题</div>
         </button>
     </div>
-    <img v-if="isShowShare" class="share-mask" src="<$ uploadUrl $>/img/share-info.png">
+  
     <quick-menu></quick-menu>
   </div>
 </script>
@@ -64,7 +66,6 @@
     data: {
       // 作业检索信息
       assignmentId: '',
-      isShowShare: false,
 
       // 页面控制参数
       isCanSubmit: true,
@@ -94,7 +95,10 @@
       actionDataForSave: {},
       actionDataForSubmit: {},
 
-      userFileList: {}
+      userFileList: {},
+
+      assignmentSwiper: null,
+      activeIndex: 0,
     },
     computed: {
       isAssignmentSubmit() {
@@ -122,6 +126,7 @@
           case 'getUserAssignment':
             await this.getUserAssignment();
             await this.setAssignmentConstants();
+            await this.initSwiper();
             break;
           case 'saveUserAssignment':
             await this.packUserAnswerForSave();
@@ -154,6 +159,31 @@
             console.error("[doUiAction] uiActionId not find", { uiActionId });
             break;
         }
+      },
+      async initSwiper() {
+        this.assignmentSwiper = new Swiper('.swiper-container', {
+          initialSlide: this.activeIndex,
+          pagination: {
+            el: '.swiper-pagination',
+            type: 'fraction'
+          },
+          virtual: {
+            slides: this.assignmentUserAnswer,
+            renderExternal(data) {
+            }
+          },
+          on: {
+            init() {
+              // this.t_isGuideVisible = !localStorage.getItem('problem-guide');
+            },
+            slideChange() {
+              this.activeIndex = this.activeIndex;
+              if (this.activeIndex === this.assignmentList.length - 1) {
+                $helper.msg('答完全部考题后<br>点击左上角“答题卡”前去提交练习');
+              }
+            }
+          }
+        });
       },
       // ---------- 初始化作业 >>>>>>>>>>>>> ----------
       async getUserAssignment() {

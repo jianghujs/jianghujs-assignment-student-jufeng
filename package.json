@@ -27,10 +27,10 @@
   "scripts": {
     "jianghuConfigImportData": "jianghu jianghuConfigImportData",
     "jianghuConfigDumpData": "jianghu jianghuConfigDumpData",
-    "start": "egg-scripts start --daemon  --port=8513 --title=baofeng_app_v1_web",
+    "start": "egg-scripts start --daemon  --port=7004 --title=baofeng_app_v1_web",
     "stop": "egg-scripts stop --title=baofeng_app_v1_web",
-    "dev": "egg-bin dev --port=8513",
-    "prod": "egg-bin dev --port=8513 --env=prod",
+    "dev": "egg-bin dev --port=7004",
+    "prod": "egg-bin dev --port=7004 --env=prod",
     "debug": "egg-bin debug",
     "test": "npm run lint -- --fix && npm run test-local",
     "test-local": "egg-bin test",
