@@ -35,7 +35,7 @@
                 'ok': getIsRight(formItem, option),
                 'no': getIsError(formItem, option),
               }">
-                {{examOptionKey[oIndex]}}. {{ option }}
+                {{ option }}
               </div>
             </label>
           </template>
@@ -134,7 +134,6 @@
     props: ['formItem', 'index', 'isSubmit', 'isReview', 'examReview', 'userFileList'],
     data: () => {
       return {
-        examOptionKey: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'],
       }
     },
     computed: {},

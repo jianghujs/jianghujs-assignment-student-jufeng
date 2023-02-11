@@ -16,11 +16,9 @@
           <span class="text-subtitle-2">
             {{ assignmentStatusDesc }}
           </span>
-          <br>
           <span v-if="isAssignmentSubmit">
             {{ assignmentResult }}
           </span>
-          
         </div>
     </div>
 
@@ -34,21 +32,26 @@
 
     <!-- 底部操作栏 -->
     <div class="footer">
-        <button>
+        <button @click="slidePrev">
             <i class="iconfont iconshangyige"></i>
             <div>上一题</div>
         </button>
-        <button>
+        <button v-if="!isAssignmentSubmit" @click="doUiAction('submitUserAssignment')">
             <i class="iconfont icontijiao"></i>
             <div>确认提交</div>
         </button>
-        <button>
+        <button v-if="isAssignmentSubmit" @click="doUiAction('redoUserAssignment')">
+          <i class="iconfont icontijiao"></i>
+          <div>重做</div>
+      </button>
+        <button @click="slideNext">
             <i class="iconfont iconxiayige"></i>
             <div>下一题</div>
         </button>
     </div>
   
     <quick-menu></quick-menu>
+
   </div>
 </script>
 {% endblock %}
@@ -58,6 +61,9 @@
 {% include 'component/subjectFormItem.html' %}
 {% include 'component/upload.html' %}
 <script src="<$ static $>/plugin/swiper5/js/swiper.js"></script>
+<script src="<$ static $>/plugin/layer/layer.js"></script>
+<link rel="stylesheet" href="<$ static $>/plugin/layer/theme/default/layer.css">
+
 <script type="module">
   new Vue({
     el: '#app',
@@ -71,7 +77,6 @@
       isCanSubmit: true,
       showStandardAnswer: false,
       answerType: '我的答案',
-      isAssignmentLoading: false,
 
       // 作业基本信息
       assignmentTitle: '题目加载中……',
@@ -153,12 +158,19 @@
             await this.setAssignmentConstants();
             break;
           case 'toggleAnswerDisplay':
+            await this.doUiAction('submitUserAssignment');
             await this.toggleAnswerDisplay();
             break;
           default:
             console.error("[doUiAction] uiActionId not find", { uiActionId });
             break;
         }
+      },
+      slidePrev() {
+        this.assignmentSwiper.slidePrev();
+      },
+      slideNext() {
+        this.assignmentSwiper.slideNext();
       },
       async initSwiper() {
         this.assignmentSwiper = new Swiper('.swiper-container', {
@@ -178,16 +190,13 @@
             },
             slideChange() {
               this.activeIndex = this.activeIndex;
-              if (this.activeIndex === this.assignmentList.length - 1) {
-                $helper.msg('答完全部考题后<br>点击左上角“答题卡”前去提交练习');
-              }
             }
           }
         });
       },
       // ---------- 初始化作业 >>>>>>>>>>>>> ----------
       async getUserAssignment() {
-        this.isAssignmentLoading = true;
+        layer.load();
         const packageData = {
           data: {
             appData: {
@@ -203,7 +212,7 @@
         const result = await window.jianghuAxios(packageData);
         this.userAssignment = result.data.appData.resultData.rows[0];
 
-        this.isAssignmentLoading = false;
+        layer.closeAll();
       },
       async setAssignmentConstants() {
         const {
@@ -349,7 +358,7 @@
       },
       async saveUserAssignment() {
         if (!this.isCanSubmit) return;
-        window.vtoast.loading('保存中...');
+        layer.load(1);
         this.isCanSubmit = false;
         this.lastSaveTime = dayjs().format();
         const packageData = {
@@ -366,15 +375,26 @@
         this.isCanSubmit = true;
         this.assignmentStatusDesc = `上次保存时间：${dayjs(this.lastSaveTime).format('YYYY年MM月DD日HH:mm:ss')}`;
         this.showStandardAnswer = false;
-        window.vtoast.success('保存成功');
+        layer.closeAll();
+        layer.msg('保存成功');
       },
       // ---------- <<<<<<<<<<<<< 保存作业 uiAction ----------
 
       // ---------- 提交作业 uiAction >>>>>>>>>>>>> ----------
       async confirmSubmitUserAssignment() {
-        if (await window.confirmDialog({ title: "提交", content: "提交以后作业将无法修改。确定提交作业吗？" }) === false) {
-          throw new Error("[confirmSubmitUserAssignment] 否");
-        }
+        // if (await window.confirmDialog({ title: "提交", content: "提交以后作业将无法修改。确定提交作业吗？" }) === false) {
+        //   throw new Error("[confirmSubmitUserAssignment] 否");
+        // }
+        await new Promise((resolve, reject) => {
+          layer.confirm('提交以后作业将无法修改。确定提交作业吗？', { icon: 3, title: '提交' }, (index) => {
+            resolve();
+            layer.close(index);
+          }, (index)=> {
+            layer.close(index);
+            throw new Error("[confirmSubmitUserAssignment] 否");
+          });
+        })
+
       },
       async packUserAnswerForSubmit() {
         this.actionDataForSubmit = {
@@ -386,7 +406,7 @@
       async submitUserAssignment() {
         if (!this.isCanSubmit) return;
         this.isCanSubmit = false;
-        window.vtoast.loading('提交中...');
+        layer.load(1);
         const packageData = {
           data: {
             appData: {
@@ -399,21 +419,29 @@
         }
         const result = await window.jianghuAxios(packageData);
         this.isCanSubmit = true;
-        window.vtoast.success('提交成功');
+        layer.closeAll();
+        layer.msg('提交成功');
       },
       // ---------- <<<<<<<<<<<<< 提交作业 uiAction ----------
 
       // ---------- 重做作业 uiAction >>>>>>>>>>>>> ----------
       async confirmRedoUserAssignment() {
-        if (await window.confirmDialog({ title: "重做", content: "之前的答案和批改将被清空。确定重做作业吗？" }) === false) {
-          throw new Error("[confirmRedoUserAssignment] 否");
-        }
+    
+        await new Promise((resolve, reject) => {
+          layer.confirm('之前的答案和批改将被清空。确定重做作业吗？', { icon: 3, title: '重做' }, (index) => {
+            resolve();
+            layer.close(index);
+          }, (index)=> {
+            layer.close(index);
+            throw new Error("[confirmRedoUserAssignment] 否");
+          });
+        })
       },
       async packUserAnswerForRedo() {
         // nothing to do
       },
       async redoUserAssignment() {
-        window.vtoast.loading('开始重做中...');
+        layer.load(1);
         const packageData = {
           data: {
             appData: {
@@ -425,8 +453,8 @@
           }
         }
         const result = await window.jianghuAxios(packageData);
-
-        window.vtoast.success('恢复成功');
+        layer.closeAll();
+        layer.msg('恢复成功');
         this.showStandardAnswer = false;
       },
       // ---------- <<<<<<<<<<<<< 重做作业 uiAction ----------
@@ -474,7 +502,7 @@
           for (const type in data[id]) {
             const file = data[id][type];
             if (file && typeof file !== 'string') {
-              window.vtoast.loading(`附件${index + 1}上传 上传进度: 0.00%`);
+              layer.msg(`附件${index + 1}上传 上传进度: 0.00%`);
               const path = `/assignmentMaterial/${that.userInfo.userId}/${that.userAssignment.assignmentId}/`;
               const { data: { status } } = await this.assignmentUploadByStream(file, path, that, index)
               if (status === 'success') {
@@ -505,7 +533,7 @@
             that.progress = Number((loaded * 100 / total).toFixed(2));
             window.vtoast.loading(`附件${i}上传 上传进度: ${that.progress}%`);
             if (loaded === total) {
-              window.vtoast.success(`附件${i}上传 上传进度: 100%`);
+              layer.msg(`附件${i}上传 上传进度: 100%`);
             }
           }
         })
@@ -546,6 +574,7 @@
   .subtitle {
     font-size: 11px;
     color: #666;
+    margin-top: 5px;
   }
 </style>
 {% endblock %}

@@ -24,6 +24,7 @@ module.exports.tableEnum = Object.freeze({
   
   // ========================View============================
   _view01_user: "_view01_user",
+  assignment: "assignment"
 });
 
 module.exports.genderEnum = Object.freeze({
