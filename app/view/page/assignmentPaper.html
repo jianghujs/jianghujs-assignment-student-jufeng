@@ -312,36 +312,28 @@
         return item;
       },
       setAssignmentReviewForTemplate() {
-        let review = {
+        let review = JSON.parse(this.userAssignment.assignmentReview) || {};
 
-        };
-        if (this.userAssignment.assignmentReview) {
-          const assignmentReview = JSON.parse(this.userAssignment.assignmentReview);
-          review = { ...review, ...assignmentReview };
-        } else {
-          this.assignmentUserAnswer.forEach(question => {
-            review[question.id] = {
-              "score": "",
-              "comment": "",
-              rightAnswer: this.setAssignmentAnswer(question),
-              userAnswer: '',
-              isRight: question.user.answer === question.component.answer,
-            };
-            if (question.component.type === 'questionGroup') {
-              question.component.itemList.forEach(groupQuestion => {
-                review[groupQuestion.id] = {
-                  "score": "",
-                  "comment": "",
-                  rightAnswer: this.setAssignmentAnswer(groupQuestion),
-                  userAnswer: '',
-                  isRight: groupQuestion.user.answer === groupQuestion.component.answer,
-                };
-              })
-            }
-          });
-        }
+        const createReview = question => ({
+          score: "",
+          comment: "",
+          rightAnswer: this.setAssignmentAnswer(question),
+          userAnswer: '',
+          isRight: question.user.answer === question.component.answer,
+        });
+        this.assignmentUserAnswer.forEach(question => {
+          review[question.id] = createReview(question);
+
+          if (question.component.type === 'questionGroup') {
+            question.component.itemList.forEach(groupQuestion => {
+              review[groupQuestion.id] = createReview(groupQuestion);
+            });
+          }
+        });
+
         return review;
       },
+
       setAssignmentAnswer(assignment) {
         const OPTION_KEY = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
         const currentComponent = assignment.component;

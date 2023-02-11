@@ -56,20 +56,19 @@
               <textarea style="display:none;">{{formItem.component.answer}}</textarea>
             </div> -->
           </v-col>
-          <v-col v-else cols="12" class="answer-tip-col">
-            <v-textarea :readonly="isSubmit || isReview" placeholder="请输入答案" v-model="formItem.user.answer" hide-details
-              class="cus-v-input mb-1" dense filled @blur="answerChange" single-line color="success" auto-grow
-              :rows="4"></v-textarea>
+          <v-col v-else cols="12">
+            <textarea :readonly="isSubmit || isReview" placeholder="请输入答案" v-model="formItem.user.answer" hide-details
+              class="textarea" dense filled @blur="answerChange" single-line color="success" auto-grow
+              :rows="4"></textarea>
           </v-col>
         </v-row>
       </div>
     </template>
 
-    <!-- <div class="upload-box d-flex my-2" v-if="formItem.component.type !== 'displayText' && userFileList">
+    <div class="upload-box my-2" v-if="formItem.component.type !== 'displayText' && userFileList">
       <upload v-for="(item, fileType, i) in userFileList[formItem.id]" ref="upload" :file-type="fileType" :key="i"
-        :value="userFileList[formItem.id][fileType]" :index="formItem.id" :i="i"
-        :style="{width: '33.3%'}" @change="onFileSave"></upload>
-    </div> -->
+        :value="userFileList[formItem.id][fileType]" :index="formItem.id" :i="i" @change="onFileSave"></upload>
+    </div>
 
     <template v-else-if="formItem.component.type === 'displayText'">
       <div class="question">
@@ -83,9 +82,9 @@
         <v-list-item-title class="mb-3" style="white-space: normal;">
           {{ index+1 }}、
           <template v-for="(blank, blankIndex) in formItem.component.statement" :key="blankIndex">
-            <v-text-field class="fill-blank fill-blank-input" v-if="blank.type === 'input'"
+            <input class="fill-blank fill-blank-input" v-if="blank.type === 'input'"
               :readonly="isSubmit || isReview" dense hide-details filled
-              v-model="formItem.user.answer[blank.id]"></v-text-field>
+              v-model="formItem.user.answer[blank.id]" />
             <span v-else>{{ blank.value }}</span>
           </template>
         </v-list-item-title>
@@ -118,8 +117,8 @@
         <p class="red--text">{{examReview[formItem.id].comment}}</p>
       </div>
 
-      <v-textarea hide-details v-if="isReview" class="student-remark" placeholder="学生备注" v-model="formItem.user.remark"
-        filled single-line :rows="2" auto-grow />
+      <textarea hide-details v-if="isReview" class="textarea" placeholder="学生备注" v-model="formItem.user.remark"
+        filled single-line :rows="2" auto-grow></textarea>
     </div>
   </div>
 </template>
@@ -190,9 +189,9 @@
   }
 
   .upload-box {
-    display: flex;
     flex-direction: row;
     justify-content: space-evenly;
+    font-size: 11px;
   }
 
   .editorMdContainer .editormd-mask {
@@ -248,5 +247,11 @@
     min-height: 30px !important;
     padding-left: 5px !important;
     padding-right: 5px !important;
+  }
+  .textarea {
+    margin-top: 10px;
+    background: #f1f1f1;
+    width: 100%;
+    padding: 10px;
   }
 </style>

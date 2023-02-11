@@ -4,20 +4,29 @@
       <div class="from-group-lg">
         <div class="border text-center p-5 upload">
           <div class="upload-preview"></div>
-          <input type="file" name="upload" :accept="accept" :id="'inputFile' + index + fileType" :class="'d-none upload-file'+index+fileType" @change="onFileChange">
-          <input type="hidden" name="cover">
-          <label :for="'inputFile' + index + fileType" class="upload-trigger text-decoration-none upload-btn" v-if="value === ''">
-            <i class="bi bi-cloud"></i>
-            <span>上传{{ getFileType() }}</span>
-          </label>
+          <div class="input-file-container">
+            <input type="file" name="upload" :accept="accept" :id="'inputFile' + index + fileType"
+              :class="'d-none upload-file'+index+fileType" @change="onFileChange">
+            <input type="hidden" name="cover">
+            <label :for="'inputFile' + index + fileType" class="upload-trigger text-decoration-none upload-btn"
+              v-if="value === ''">
+              <i class="bi bi-cloud"></i>
+              <span>上传{{ getFileType() }}</span>
+            </label>
+          </div>
+
+
+
+
           <div v-else class="preview-box">
             <label class="file-item">
-              <label :for="'inputFile' + index + fileType" class="file-name upload-btn">{{ getFileType() }}<v-icon small color="green" aria-hidden="false">mdi-check-circle</v-icon></label>
-            </div>
+              <label :for="'inputFile' + index + fileType" class="file-name upload-btn">{{ getFileType() }}<v-icon small
+                  color="green" aria-hidden="false">mdi-check-circle</v-icon></label>
           </div>
         </div>
       </div>
-    </form>
+  </div>
+  </form>
   </div>
 </template>
 
@@ -37,8 +46,8 @@
       endpoint: Object,
       icons: Object,
       axios: Function,
-      maxUploadFilesCount: {type: Number, default: 0},
-      maxUploadFileSize: {type: Number, default: 0}
+      maxUploadFilesCount: { type: Number, default: 0 },
+      maxUploadFileSize: { type: Number, default: 0 }
     },
     data() {
       return {
@@ -103,7 +112,7 @@
           case 'video':
             this.accept = 'video/*'
             return '视频'
-          default :
+          default:
             return '附件'
         }
       }
@@ -114,32 +123,59 @@
 </script>
 
 <style scoped>
-    ::v-deep .v-overlay__content {
-        width: 90%;
-        max-width: 500px;
-    }
+  ::v-deep .v-overlay__content {
+    width: 90%;
+    max-width: 500px;
+  }
 
-    ::v-deep .v-overlay__content .files-list-wrapper {
-        max-height: 250px;
-        overflow-y: auto;
-    }
-    .upload-container .upload-trigger {
-        cursor: pointer;
-    }
-    .upload-container .from-group-lg {
-        background-color: #FFF;
-        border: 1px solid #eeeeee;
-        border-radius: 10px;
-        padding: 0;
-    }
-    .upload-container .file-item {
-    }
-    .upload-container .upload-btn {
-        display: block;
-        width: 100%;
-        padding: 5px
-    }
-    .upload-container .from-group-lg:hover {
-        background-color: #c7c7c7;
-    }
+  ::v-deep .v-overlay__content .files-list-wrapper {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
+  .upload-container .upload-trigger {
+    cursor: pointer;
+  }
+
+  .upload-container .from-group-lg {
+    background-color: #FFF;
+    border: 1px solid #eeeeee;
+    border-radius: 10px;
+    padding: 0;
+  }
+
+  .upload-container .file-item {}
+
+  .upload-container .upload-btn {
+    display: block;
+    width: 100%;
+    padding: 5px;
+    text-align: center;
+  }
+
+  .upload-container .from-group-lg:hover {
+    background-color: #c7c7c7;
+  }
+
+  .input-file-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 20px;
+    background-color: #999;
+    font-size: 11px;
+  }
+
+  .input-file-container input[type="file"] {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+  }
+
+  .input-file-container span {
+    padding: 20px;
+  }
 </style>
