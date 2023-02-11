@@ -32,7 +32,7 @@
 
     <!-- 底部操作栏 -->
     <div class="footer">
-        <button @click="slidePrev">
+        <button :disabled="!activeIndex" @click="slidePrev">
             <i class="iconfont iconshangyige"></i>
             <div>上一题</div>
         </button>
@@ -44,7 +44,7 @@
           <i class="iconfont icontijiao"></i>
           <div>重做</div>
       </button>
-        <button @click="slideNext">
+        <button :disabled="activeIndex === assignmentUserAnswer.length-1" @click="slideNext">
             <i class="iconfont iconxiayige"></i>
             <div>下一题</div>
         </button>
@@ -173,6 +173,7 @@
         this.assignmentSwiper.slideNext();
       },
       async initSwiper() {
+        const that = this;
         this.assignmentSwiper = new Swiper('.swiper-container', {
           initialSlide: this.activeIndex,
           pagination: {
@@ -185,11 +186,11 @@
             }
           },
           on: {
-            init() {
+            init: function () {
               // this.t_isGuideVisible = !localStorage.getItem('problem-guide');
             },
-            slideChange() {
-              this.activeIndex = this.activeIndex;
+            slideChange: function () {
+              that.activeIndex = this.activeIndex;
             }
           }
         });
@@ -318,22 +319,47 @@
           const assignmentReview = JSON.parse(this.userAssignment.assignmentReview);
           review = { ...review, ...assignmentReview };
         } else {
-          this.assignmentStandardAnswer.forEach(question => {
+          this.assignmentUserAnswer.forEach(question => {
             review[question.id] = {
               "score": "",
               "comment": "",
+              rightAnswer: this.setAssignmentAnswer(question),
+              userAnswer: '',
+              isRight: question.user.answer === question.component.answer,
             };
             if (question.component.type === 'questionGroup') {
               question.component.itemList.forEach(groupQuestion => {
                 review[groupQuestion.id] = {
                   "score": "",
                   "comment": "",
+                  rightAnswer: this.setAssignmentAnswer(groupQuestion),
+                  userAnswer: '',
+                  isRight: groupQuestion.user.answer === groupQuestion.component.answer,
                 };
               })
             }
           });
         }
         return review;
+      },
+      setAssignmentAnswer(assignment) {
+        const OPTION_KEY = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+        const currentComponent = assignment.component;
+        switch (currentComponent.type) {
+          case 'singleSelect':
+            return OPTION_KEY[currentComponent.selectOptionList.indexOf(currentComponent.answer)];
+          case 'multipleSelect':
+            return currentComponent.answer
+              .map(answer => OPTION_KEY[currentComponent.selectOptionList.indexOf(answer)])
+              .join(',');
+          case 'fillBlank':
+            return currentComponent.statement
+              .filter(item => item.type === 'input')
+              .reduce((acc, item) => [...acc, item.value], [])
+              .join(',');
+          default:
+            return '';
+        }
       },
       // ---------- <<<<<<<<<<<<< 初始化作业 ----------
 
@@ -389,7 +415,7 @@
           layer.confirm('提交以后作业将无法修改。确定提交作业吗？', { icon: 3, title: '提交' }, (index) => {
             resolve();
             layer.close(index);
-          }, (index)=> {
+          }, (index) => {
             layer.close(index);
             throw new Error("[confirmSubmitUserAssignment] 否");
           });
@@ -426,12 +452,12 @@
 
       // ---------- 重做作业 uiAction >>>>>>>>>>>>> ----------
       async confirmRedoUserAssignment() {
-    
+
         await new Promise((resolve, reject) => {
           layer.confirm('之前的答案和批改将被清空。确定重做作业吗？', { icon: 3, title: '重做' }, (index) => {
             resolve();
             layer.close(index);
-          }, (index)=> {
+          }, (index) => {
             layer.close(index);
             throw new Error("[confirmRedoUserAssignment] 否");
           });

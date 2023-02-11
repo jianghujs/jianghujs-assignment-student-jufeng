@@ -106,10 +106,9 @@
       <div :class="[examReview[formItem.id].isRight ? 'ok' : 'no']">回答{{ !examReview[formItem.id].isRight ? '错误' : '正确'
         }}</div>
       <div>
-        <div>正确答案：<div>{{ examReview[formItem.id].answerString }}</div>
+        <div>正确答案：<div>{{ examReview[formItem.id].rightAnswer }}</div>
         </div>
-        <!-- <div>您的答案：<div>{{ formItem.user.answer }}</div>
-        </div> -->
+        <!-- <div>您的答案：<div>{{ formItem.user.answer }}</div> -->
       </div>
       <div v-if="examReview[formItem.id].score || examReview[formItem.id].score === 0">
         考试评分：{{examReview[formItem.id].score}}</div>
