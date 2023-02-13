@@ -59,7 +59,7 @@
 {% block vueScript %}
 {% include 'component/quickMenu.html' %}
 {% include 'component/subjectFormItem.html' %}
-{% include 'component/upload.html' %}
+{% include 'component/attachmentUpload.html' %}
 <script src="<$ static $>/plugin/swiper5/js/swiper.js"></script>
 <script src="<$ static $>/plugin/layer/layer.js"></script>
 <link rel="stylesheet" href="<$ static $>/plugin/layer/theme/default/layer.css">
@@ -104,6 +104,9 @@
 
       assignmentSwiper: null,
       activeIndex: 0,
+      userInfo: {
+        userId: '<$ ctx.userInfo.userId $>'
+      },
     },
     computed: {
       isAssignmentSubmit() {
@@ -144,6 +147,7 @@
             await this.confirmSubmitUserAssignment();
             await this.packUserAnswerForSubmit();
             await this.clearAutoSaveTimer();
+            await this.uploadAssignmentFile();
             await this.submitUserAssignment();
             await this.startAutoSaveTimer();
             await this.getUserAssignment();
@@ -521,10 +525,10 @@
             const file = data[id][type];
             if (file && typeof file !== 'string') {
               layer.msg(`附件${index + 1}上传 上传进度: 0.00%`);
-              const path = `/assignmentMaterial/${that.userInfo.userId}/${that.userAssignment.assignmentId}/`;
+              const path = `/assignmentMaterial/${that.userInfo.userId}/${that.assignmentId}/`;
               const { data: { status } } = await this.assignmentUploadByStream(file, path, that, index)
               if (status === 'success') {
-                for (const item1 of that.userAssignment.assignmentUserAnswer) {
+                for (const item1 of that.assignmentUserAnswer) {
                   if (item1.id === id) {
                     item1.user.file[type] = path + file.name;
                   }
@@ -549,7 +553,8 @@
           fileDirectory: path,
           onProgress: (total, loaded) => {
             that.progress = Number((loaded * 100 / total).toFixed(2));
-            window.vtoast.loading(`附件${i}上传 上传进度: ${that.progress}%`);
+            // window.vtoast.loading(`附件${i}上传 上传进度: ${that.progress}%`);
+            layer.msg(`附件${i}上传 上传进度: ${that.progress}%`);
             if (loaded === total) {
               layer.msg(`附件${i}上传 上传进度: 100%`);
             }

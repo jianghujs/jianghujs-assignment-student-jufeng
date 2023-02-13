@@ -65,21 +65,17 @@
       </div>
     </template>
 
-    <div class="upload-box my-2" v-if="formItem.component.type !== 'displayText' && userFileList">
-      <upload v-for="(item, fileType, i) in userFileList[formItem.id]" ref="upload" :file-type="fileType" :key="i"
-        :value="userFileList[formItem.id][fileType]" :index="formItem.id" :i="i" @change="onFileSave"></upload>
-    </div>
+   
 
     <template v-else-if="formItem.component.type === 'displayText'">
       <div class="question">
-        <v-list-item-title class="formItem-title">{{ index+1 }}、 {{ formItem.component.statement }}</v-list-item-title>
+        <div class="formItem-title">{{ index+1 }}、 {{ formItem.component.statement }}</div>
       </div>
     </template>
 
     <template v-else-if="formItem.component.type === 'fillBlank'">
       <div class="question">
-
-        <v-list-item-title class="mb-3" style="white-space: normal;">
+        <div class="mb-3" style="white-space: normal;">
           {{ index+1 }}、
           <template v-for="(blank, blankIndex) in formItem.component.statement" :key="blankIndex">
             <input class="fill-blank fill-blank-input" v-if="blank.type === 'input'"
@@ -87,7 +83,7 @@
               v-model="formItem.user.answer[blank.id]" />
             <span v-else>{{ blank.value }}</span>
           </template>
-        </v-list-item-title>
+        </div>
         <div v-if="formItem.component.markdownContent" ref="assignmentMarkdownContent"
           class="assignmentMarkdownContent markdown-body" :data-content="formItem.component.markdownContent"></div>
       </div>
@@ -119,6 +115,11 @@
 
       <textarea hide-details v-if="isReview" class="textarea" placeholder="学生备注" v-model="formItem.user.remark"
         filled single-line :rows="2" auto-grow></textarea>
+    </div>
+
+    <div class="upload-box my-2" v-if="formItem.component.type !== 'displayText' && userFileList">
+      <attachment-upload v-for="(item, fileType, i) in userFileList[formItem.id]" ref="upload" :file-type="fileType" :key="i"
+        :value="userFileList[formItem.id][fileType]" :index="formItem.id" :i="i" @change="onFileSave" :style="{flex: 1, 'margin-left': i > 0 ? '12px' : 0}"></attachment-upload>
     </div>
   </div>
 </template>
@@ -189,9 +190,11 @@
   }
 
   .upload-box {
+    display: flex;
     flex-direction: row;
     justify-content: space-evenly;
     font-size: 11px;
+    margin-top: 10px;
   }
 
   .editorMdContainer .editormd-mask {

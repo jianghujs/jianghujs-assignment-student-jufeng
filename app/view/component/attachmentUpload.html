@@ -1,40 +1,33 @@
-<template id="upload">
+<template id="attachmentUpload">
   <div class="upload-container">
     <form method="post">
       <div class="from-group-lg">
         <div class="border text-center p-5 upload">
           <div class="upload-preview"></div>
-          <div class="input-file-container">
-            <input type="file" name="upload" :accept="accept" :id="'inputFile' + index + fileType"
-              :class="'d-none upload-file'+index+fileType" @change="onFileChange">
-            <input type="hidden" name="cover">
-            <label :for="'inputFile' + index + fileType" class="upload-trigger text-decoration-none upload-btn"
-              v-if="value === ''">
-              <i class="bi bi-cloud"></i>
-              <span>上传{{ getFileType() }}</span>
-            </label>
-          </div>
-
-
-
-
+          <input type="file" name="upload" :accept="accept" :id="'inputFile' + index + fileType" :class="'d-none upload-file'+index+fileType" @change="onFileChange">
+          <input type="hidden" name="cover">
+          <label :for="'inputFile' + index + fileType" class="upload-trigger text-decoration-none upload-btn" v-if="value === ''">
+            <i class="bi bi-cloud"></i>
+            <span>上传{{ getFileType() }}</span>
+          </label>
           <div v-else class="preview-box">
             <label class="file-item">
-              <label :for="'inputFile' + index + fileType" class="file-name upload-btn">{{ getFileType() }}<v-icon small
-                  color="green" aria-hidden="false">mdi-check-circle</v-icon></label>
+              <label :for="'inputFile' + index + fileType" class="file-name upload-btn">{{ getFileType() }}
+                <i class="iconfont iconzhengque"></i>
+              </label>
+            </div>
           </div>
         </div>
       </div>
-  </div>
-  </form>
+    </form>
   </div>
 </template>
 
 <script>
-  Vue.component("upload", {
+  Vue.component("attachmentUpload", {
     vuetify: new Vuetify(),
-    name: 'upload',
-    template: '#upload',
+    name: 'attachmentUpload',
+    template: '#attachmentUpload',
     props: {
       value: String | Boolean,
       path: String,
@@ -140,7 +133,7 @@
   .upload-container .from-group-lg {
     background-color: #FFF;
     border: 1px solid #eeeeee;
-    border-radius: 10px;
+    border-radius: 5px;
     padding: 0;
   }
 
@@ -156,26 +149,11 @@
   .upload-container .from-group-lg:hover {
     background-color: #c7c7c7;
   }
-
-  .input-file-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 20px;
-    background-color: #999;
-    font-size: 11px;
+  .d-none {
+    display: none;
   }
-
-  .input-file-container input[type="file"] {
-    width: 0.1px;
-    height: 0.1px;
-    opacity: 0;
-    overflow: hidden;
-    position: absolute;
-    z-index: -1;
-  }
-
-  .input-file-container span {
-    padding: 20px;
+  .iconzhengque {
+     color: green;
+     font-size: 11px;
   }
 </style>
