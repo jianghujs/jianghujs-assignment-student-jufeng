@@ -1,7 +1,8 @@
 <!-- assignment/detail.html >>>>>>>>>>>>> -->
 {% extends "template/jfTemplate.html" %}
 {% block htmlHead %}
-
+<script src="/<$ ctx.app.config.appId $>/public/plugins/editor.md/lib/marked.min.js"></script>
+<link rel="stylesheet" href="/<$ ctx.app.config.appId $>/public/plugins/editor.md/css/editormd.min.css"/>
 {% endblock %}
 {% block vueTemplate %}
 <script type="text/html" id="app-template">

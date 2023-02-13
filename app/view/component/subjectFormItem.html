@@ -65,7 +65,7 @@
       </div>
     </template>
 
-   
+
 
     <template v-else-if="formItem.component.type === 'displayText'">
       <div class="question">
@@ -78,9 +78,8 @@
         <div class="mb-3" style="white-space: normal;">
           {{ index+1 }}、
           <template v-for="(blank, blankIndex) in formItem.component.statement" :key="blankIndex">
-            <input class="fill-blank fill-blank-input" v-if="blank.type === 'input'"
-              :readonly="isSubmit || isReview" dense hide-details filled
-              v-model="formItem.user.answer[blank.id]" />
+            <input class="fill-blank fill-blank-input" v-if="blank.type === 'input'" :readonly="isSubmit || isReview"
+              dense hide-details filled v-model="formItem.user.answer[blank.id]" />
             <span v-else>{{ blank.value }}</span>
           </template>
         </div>
@@ -88,16 +87,19 @@
           class="assignmentMarkdownContent markdown-body" :data-content="formItem.component.markdownContent"></div>
       </div>
     </template>
-    <!-- <template v-else-if="formItem.component.type === 'questionGroup'">
-      <div class="question">
+    <template v-else-if="formItem.component.type === 'questionGroup'">
+      <div class="question group">
         <p class="text-h6">{{ index+1 }}、{{ formItem.component.statement }}</p>
         <div v-if="formItem.component.markdownContent" ref="assignmentMarkdownContent"
           class="assignmentMarkdownContent markdown-body" :data-content="formItem.component.markdownContent"></div>
         <slot name="questionGroup"></slot>
+        <subject-form-item v-for="(childFormItem, index) in formItem.component.itemList" :key="index"
+          :form-item="childFormItem" :index="index" :is-submit="isSubmit" :is-review="isReview"
+          :exam-review="examReview" :user-file-list="userFileList"></subject-form-item>
       </div>
-    </template> -->
+    </template>
 
-    <div v-if="examReview && isSubmit" class="analysis">
+    <div v-if="examReview && isSubmit && formItem.component.type !== 'questionGroup'" class="analysis">
       <div :class="[examReview[formItem.id].isRight ? 'ok' : 'no']">回答{{ !examReview[formItem.id].isRight ? '错误' : '正确'
         }}</div>
       <div>
@@ -113,13 +115,14 @@
         <p class="red--text">{{examReview[formItem.id].comment}}</p>
       </div>
 
-      <textarea hide-details v-if="isReview" class="textarea" placeholder="学生备注" v-model="formItem.user.remark"
-        filled single-line :rows="2" auto-grow></textarea>
+      <textarea hide-details v-if="isReview" class="textarea" placeholder="学生备注" v-model="formItem.user.remark" filled
+        single-line :rows="2" auto-grow></textarea>
     </div>
 
     <div class="upload-box my-2" v-if="formItem.component.type !== 'displayText' && userFileList">
-      <attachment-upload v-for="(item, fileType, i) in userFileList[formItem.id]" ref="upload" :file-type="fileType" :key="i"
-        :value="userFileList[formItem.id][fileType]" :index="formItem.id" :i="i" @change="onFileSave" :style="{flex: 1, 'margin-left': i > 0 ? '12px' : 0}"></attachment-upload>
+      <attachment-upload v-for="(item, fileType, i) in userFileList[formItem.id]" ref="upload" :file-type="fileType"
+        :key="i" :value="userFileList[formItem.id][fileType]" :index="formItem.id" :i="i" @change="onFileSave"
+        :style="{flex: 1, 'margin-left': i > 0 ? '12px' : 0}"></attachment-upload>
     </div>
   </div>
 </template>
@@ -135,12 +138,6 @@
       return {
       }
     },
-    computed: {},
-    destroyed() { },
-    watch: {},
-    async created() {
-      // this.markdownToHtml();
-    },
     methods: {
       getIsRight(formItem, option) {
         return formItem.user.answer === option && this.isSubmit && (this.examReview && this.examReview[formItem.id].isRight)
@@ -151,24 +148,7 @@
       answerChange() {
         // this.$emit('answer-change', this.formItem.id, this.formItem.user.answer);
       },
-      markdownToHtml() {
-        // console.log('markdownToHtml', this.$refs['assignmentMarkdownContent' + this.formItem.id])
-        // this.$refs['assignmentMarkdownContent' + this.formItem.id].innerHTML = ArticleMarkdownEngine.md2html(this.formItem.component.markdownContent);
-        // const artContentRefs = document.querySelectorAll('.assignmentMarkdownContent');
-        // artContentRefs.forEach(artContent => {
-        //   const contentText = this.$refs.assignmentMarkdownContent.dataset.content;
-        //   artContent.innerHTML = ArticleMarkdownEngine.md2html(contentText);
-        // })
-        // if (formItem.component.markdownContent) {
-        // console.log('markdownToHtml', this.formItem.component.markdownContent)
-        const containerId = 'editorMdContainer-' + this.formItem.id;
-        editormd.markdownToHTML(containerId, {
-          // markdown: formItem.component.markdownContent, //待渲染的markdown文本字符串
-          markdown: this.formItem.component.answer, //待渲染的markdown文本字符串
-          tocContainer: '#' + containerId,	//指定目录容器的id
-          tocDropdown: false
-        })
-      },
+      
       onFileSave(id, type, file) {
         this.userFileList[id][type] = file;
       },
@@ -251,10 +231,15 @@
     padding-left: 5px !important;
     padding-right: 5px !important;
   }
+
   .textarea {
     margin-top: 10px;
     background: #f1f1f1;
     width: 100%;
     padding: 10px;
+  }
+  .question.group {
+    background: transparent;
+    
   }
 </style>
