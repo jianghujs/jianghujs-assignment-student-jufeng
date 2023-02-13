@@ -229,6 +229,7 @@
           assignmentFullMarks,
           assignmentRetryNumber,
         } = this.userAssignment
+        this.userFileList = {};
 
         if (assignmentSubmitStatus == 'new') {
           this.assignmentStatusDesc = '答题中'
@@ -521,6 +522,7 @@
         }
       },
       async assignmentUploadForEach(data, index, that) {
+        const assignmentAnswer = [...that.assignmentAnswer]
         for (const id in data) {
           for (const type in data[id]) {
             const file = data[id][type];
@@ -529,7 +531,8 @@
               const path = `/assignmentMaterial/${that.userInfo.userId}/${that.assignmentId}/`;
               const { data: { status } } = await this.assignmentUploadByStream(file, path, that, index)
               if (status === 'success') {
-                for (const item1 of that.assignmentUserAnswer) {
+                
+                for (const item1 of assignmentAnswer) {
                   if (item1.id === id) {
                     item1.user.file[type] = path + file.name;
                   }
@@ -541,11 +544,15 @@
                     }
                   }
                 }
+                
                 that.userFileList[id][type] = path + file.name;
               }
             }
           }
         }
+        console.log('[assignmentUploadForEach] assignmentAnswer', assignmentAnswer);
+        // TODO assignmentAnswer更新不上
+        that.assignmentAnswer = assignmentAnswer;
       },
       async assignmentUploadByStream(file, path, that, i) {
         return await window.jianghuAxios.httpUploadByStream({

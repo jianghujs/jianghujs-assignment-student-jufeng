@@ -49,14 +49,7 @@
         <div v-if="formItem.component.markdownContent" ref="assignmentMarkdownContent"
           class="assignmentMarkdownContent markdown-body" :data-content="formItem.component.markdownContent"></div>
         <v-row>
-          <v-col v-if="formItem.component.type === 'markdown'" cols="12" class="answer-tip-col"
-            :style="{height: isSubmit ? 'auto': '400px'}">
-            <md2html :article-content="formItem.user.answer"></md2html>
-            <!-- <div v-else class="editorMdContainer" :id="'editorMdContainer-'+formItem.id" style="position: relative;">
-              <textarea style="display:none;">{{formItem.component.answer}}</textarea>
-            </div> -->
-          </v-col>
-          <v-col v-else cols="12">
+          <v-col cols="12">
             <textarea :readonly="isSubmit || isReview" placeholder="请输入答案" v-model="formItem.user.answer" hide-details
               class="textarea" dense filled @blur="answerChange" single-line color="success" auto-grow
               :rows="4"></textarea>
@@ -127,7 +120,6 @@
   </div>
 </template>
 
-{% include 'component/md2html.html' %}
 <script>
   Vue.component("subject-form-item", {
     template: '#subject-form-item',
