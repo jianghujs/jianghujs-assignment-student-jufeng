@@ -26,8 +26,8 @@
     <!-- 答题body -->
     <div class="swiper-container swiper-no-swiping">
         <div class="swiper-wrapper">
-        <subject-form-item v-for="(formItem, index) in assignmentAnswer" :key="index" :form-item="formItem" :index="index"
-            :is-submit="isAssignmentSubmit" :is-review="isAssignmentReview" :exam-review="assignmentReview" :user-file-list="userFileList"></subject-form-item>
+        <assignment-form-item v-for="(formItem, index) in assignmentAnswer" :key="index" :form-item="formItem" :index="index"
+            :is-submit="isAssignmentSubmit" :is-review="isAssignmentReview" :exam-review="assignmentReview" :user-file-list="userFileList"></assignment-form-item>
       </div>
     </div>
 
@@ -59,7 +59,7 @@
 
 {% block vueScript %}
 {% include 'component/quickMenu.html' %}
-{% include 'component/subjectFormItem.html' %}
+{% include 'component/assignmentFormItem.html' %}
 {% include 'component/attachmentUpload.html' %}
 <script src="<$ static $>/plugin/swiper5/js/swiper.js"></script>
 <script src="<$ static $>/plugin/layer/layer.js"></script>
@@ -322,7 +322,7 @@
 
         const createReview = question => ({
           score: "",
-          comment: "",
+          comment: review[question.id].comment,
           rightAnswer: this.setAssignmentAnswer(question),
           userAnswer: '',
           isRight: question.user.answer === question.component.answer,

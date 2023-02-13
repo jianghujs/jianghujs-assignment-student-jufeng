@@ -1,4 +1,4 @@
-<template id="subject-form-item">
+<template id="assignmentFormItem">
   <div class="swiper-slide mb-3">
     <div class="type">{{ formItem.component.typeDesc }}</div>
 
@@ -86,9 +86,9 @@
         <div v-if="formItem.component.markdownContent" ref="assignmentMarkdownContent"
           class="assignmentMarkdownContent markdown-body" :data-content="formItem.component.markdownContent"></div>
         <slot name="questionGroup"></slot>
-        <subject-form-item v-for="(childFormItem, index) in formItem.component.itemList" :key="index"
+        <assignment-form-item v-for="(childFormItem, index) in formItem.component.itemList" :key="index"
           :form-item="childFormItem" :index="index" :is-submit="isSubmit" :is-review="isReview"
-          :exam-review="examReview" :user-file-list="userFileList"></subject-form-item>
+          :exam-review="examReview" :user-file-list="userFileList"></assignment-form-item>
       </div>
     </template>
 
@@ -104,8 +104,8 @@
         考试评分：{{examReview[formItem.id].score}}</div>
 
       <div v-if="examReview[formItem.id].comment">
-        <div class="red--text">考试评语：</div>
-        <p class="red--text">{{examReview[formItem.id].comment}}</p>
+        <div>教师评语：</div>
+        <p class="color-red">{{examReview[formItem.id].comment}}</p>
       </div>
 
       <textarea hide-details v-if="isReview" class="textarea" placeholder="学生备注" v-model="formItem.user.remark" filled
@@ -121,10 +121,10 @@
 </template>
 
 <script>
-  Vue.component("subject-form-item", {
-    template: '#subject-form-item',
+  Vue.component("assignmentFormItem", {
+    template: '#assignmentFormItem',
     vuetify: new Vuetify(),
-    name: 'subject-form-item',
+    name: 'assignmentFormItem',
     props: ['formItem', 'index', 'isSubmit', 'isReview', 'examReview', 'userFileList'],
     data: () => {
       return {
@@ -232,6 +232,8 @@
   }
   .question.group {
     background: transparent;
-    
+  }
+  .color-red {
+    color: red;
   }
 </style>
